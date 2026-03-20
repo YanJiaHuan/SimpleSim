@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SimpleSim Runtime</title>
+  <link rel="stylesheet" href="/web/styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/node_modules/three/build/three.module.js",
+        "three/": "/node_modules/three/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <aside class="panel">
+    <h1>SimpleSim</h1>
+    <p id="robot-name" class="muted">loading...</p>
+    <p id="status">state: booting</p>
+
+    <h2>Control</h2>
+    <p>Translate: <code>W/S</code> <code>A/D</code> <code>R/F</code></p>
+    <p>Rotate: <code>Q/E</code> <code>↑/↓</code> <code>←/→</code></p>
+
+    <h2>EE Pose</h2>
+    <pre id="ee-pose">[]</pre>
+
+    <h2>IK</h2>
+    <pre id="ik-state">no command yet</pre>
+  </aside>
+
+  <main id="viewer"></main>
+  <script type="module" src="/web/app.js"></script>
+</body>
+</html>
+

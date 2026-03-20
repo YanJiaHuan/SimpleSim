@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="TR4全新URDF">
+  <link
+    name="base_link">
+    <inertial>
+      <origin
+        xyz="-0.044044 4.1046E-05 0.35314"
+        rpy="0 0 0" />
+      <mass
+        value="62.34" />
+      <inertia
+        ixx="2.4972"
+        ixy="-5.136E-05"
+        ixz="-0.026499"
+        iyy="2.9084"
+        iyz="-0.00014713"
+        izz="1.479" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://TR4全新URDF/meshes/base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89412 0.91373 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://TR4全新URDF/meshes/base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="torso">
+    <inertial>
+      <origin
+        xyz="0.00027401 -0.14991 0.91143"
+        rpy="0 0 0" />
+      <mass
+        value="3.3193" />
+      <inertia
+        ixx="0.016893"
+        ixy="-1.2784E-05"
+        ixz="-7.5907E-05"
+        iyy="0.026595"
+        iyz="-0.0010839"
+        izz="0.018448" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://TR4全新URDF/meshes/torso.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.43922 0.43922 0.43922 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://TR4全新URDF/meshes/torso.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="elevating_joint"
+    type="prismatic">
+    <origin
+      xyz="-0.11205 -0.00063586 0.39566"
+      rpy="0 0 1.5708" />
+    <parent
+      link="base_link" />
+    <child
+      link="torso" />
+    <axis
+      xyz="0 0 1" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+</robot>
