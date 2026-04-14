@@ -5,16 +5,29 @@ from typing import Dict, List
 from core.api import RobotAPI
 
 
-class KeyboardInterface:
-    """Keyboard -> EE delta command. No direct joint editing here.
+def robot_to_urdf(delta: List[float]) -> List[float]:
+    """Convert EE delta from robot frame to URDF world frame.
 
-    Coordinate convention (x+ right, y+ forward, z+ up):
-      W/S  — translate Y (forward / backward)
-      A/D  — translate X (left / right)
-      Q/E  — translate Z (up / down)
-      J/U  — rotate roll  (+/-)
-      K/I  — rotate pitch (+/-)
-      L/O  — rotate yaw   (+/-)
+    TR4 Pro arms are side-mounted.  The observed axis correspondence is:
+        robot +X (right)   = URDF +Z
+        robot +Y (forward) = URDF -Y
+        robot +Z (up)      = URDF +X
+
+    Position transform:  [dx, dy, dz] -> [dz, -dy, dx]
+    Rotation transform:  [roll, pitch, yaw] -> [yaw, -pitch, roll]
+      (roll  about robot X = about URDF Z = URDF yaw)
+      (pitch about robot Y = about -URDF Y = -URDF pitch)
+      (yaw   about robot Z = about URDF X = URDF roll)
+    """
+    dx, dy, dz, roll, pitch, yaw = delta
+    return [dz, -dy, dx, yaw, -pitch, roll]
+
+
+class KeyboardInterface:
+    """Keyboard -> EE delta command.
+
+    Bindings use the robot frame (X=right, Y=forward, Z=up).
+    robot_to_urdf() converts to URDF world frame before calling the API.
     """
 
     def __init__(self, translation_step: float = 0.01, rotation_step: float = 0.04) -> None:
@@ -23,16 +36,17 @@ class KeyboardInterface:
 
         t = self.translation_step
         r = self.rotation_step
+
+        # Deltas expressed in robot frame (X=right, Y=fwd, Z=up).
         self._bindings: Dict[str, List[float]] = {
             # Translation
-            # URDF world axes observed: +X=up, -Y=fwd, +Z=right
-            "KeyW": [0.0,  -t,  0.0, 0.0, 0.0, 0.0],  # -Y_urdf = forward
-            "KeyS": [0.0,   t,  0.0, 0.0, 0.0, 0.0],  # +Y_urdf = backward
-            "KeyA": [0.0,  0.0, -t,  0.0, 0.0, 0.0],  # -Z_urdf = left
-            "KeyD": [0.0,  0.0,  t,  0.0, 0.0, 0.0],  # +Z_urdf = right
-            "KeyQ": [ t,   0.0, 0.0, 0.0, 0.0, 0.0],  # +X_urdf = up
-            "KeyE": [-t,   0.0, 0.0, 0.0, 0.0, 0.0],  # -X_urdf = down
-            # Rotation
+            "KeyW": [0.0,  t,  0.0, 0.0, 0.0, 0.0],  # +Y forward
+            "KeyS": [0.0, -t,  0.0, 0.0, 0.0, 0.0],  # -Y backward
+            "KeyA": [-t,  0.0, 0.0, 0.0, 0.0, 0.0],  # -X left
+            "KeyD": [ t,  0.0, 0.0, 0.0, 0.0, 0.0],  # +X right
+            "KeyQ": [0.0, 0.0,  t,  0.0, 0.0, 0.0],  # +Z up
+            "KeyE": [0.0, 0.0, -t,  0.0, 0.0, 0.0],  # -Z down
+            # Rotation (robot frame)
             "KeyJ": [0.0, 0.0, 0.0,  r,  0.0, 0.0],  # roll+
             "KeyU": [0.0, 0.0, 0.0, -r,  0.0, 0.0],  # roll-
             "KeyK": [0.0, 0.0, 0.0, 0.0,  r,  0.0],  # pitch+
@@ -52,12 +66,13 @@ class KeyboardInterface:
         return delta
 
     def apply_keys(self, keys: List[str], api: RobotAPI) -> dict:
-        delta = self.delta_from_keys(keys)
-        if all(abs(value) < 1e-12 for value in delta):
+        delta_robot = self.delta_from_keys(keys)
+        if all(abs(v) < 1e-12 for v in delta_robot):
             out = api.snapshot()
             out.update({"success": True, "moved": False, "keys": keys})
             return out
 
-        out = api.step_ee(delta)
-        out.update({"moved": True, "delta": delta, "keys": keys})
+        delta_urdf = robot_to_urdf(delta_robot)
+        out = api.step_ee(delta_urdf)
+        out.update({"moved": True, "delta": delta_robot, "keys": keys})
         return out
