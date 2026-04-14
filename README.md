@@ -18,24 +18,27 @@ npm install
 
 | Action | Keys |
 |---|---|
-| Translate X | `W` / `S` |
-| Translate Y | `A` / `D` |
-| Translate Z | `R` / `F` |
-| Yaw | `Q` / `E` |
-| Pitch | `↑` / `↓` |
-| Roll | `←` / `→` |
+| Forward / Back | `W` / `S` |
+| Left / Right | `A` / `D` |
+| Up / Down | `Q` / `E` |
+| Roll | `J` / `U` |
+| Pitch | `K` / `I` |
+| Yaw | `L` / `O` |
+| Reset to home | `R` |
+| Switch arm | `C` |
 
-左侧面板实时显示关节角、末端位姿、IK 状态,并提供 **Home** 和 **Switch Arm** 按钮。
+左侧面板实时显示关节角、末端位姿、IK 状态,并提供 **Home** 和 **Switch Arm** 按钮。两只手臂独立维护姿态,切换时互不影响。
 
 ## Layout
 
 ```
-core/        # RobotModel, FK, DLS IK, state, RobotAPI (唯一控制入口)
-loader/      # URDF → RobotModel
-interface/   # 键盘 → EE delta 指令
+core/        # RobotModel, FK (world frame), DLS IK, SimulationState, RobotAPI
+loader/      # URDF → RobotModel (含 base_link 世界坐标变换)
+interface/   # 键盘 → EE delta (robot frame → URDF world frame)
 renderer/    # http.server + /api 端点 + 静态文件
-web/         # three.js + URDFLoader 前端
-configs/     # JSON 格式的配置 (arm, IK, server, keyboard, rm_api)
+web/         # Three.js + URDFLoader 前端
+configs/     # JSON 格式配置 (arms, IK, server, keyboard, rm_api)
+tests/       # pytest 单元测试
 ```
 
 层级规则:`interface` 和 `renderer` 不直接修改 state,所有变更通过 `core/api.py`。
