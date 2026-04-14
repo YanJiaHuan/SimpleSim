@@ -65,7 +65,13 @@ def test_set_robot_swaps_model_and_q_init() -> None:
     )
 
     assert api.robot is robot_b
-    assert api.state.q == [0.0, 0.0]
+
+    # Push the swapped robot off-home so home() has something to undo.
+    api.move_joint([0.25, -0.25])
+    assert abs(api.state.q[0] - 0.25) < 1e-9
+    assert abs(api.state.q[1] + 0.25) < 1e-9
+
     out = api.home()
     assert out["q"] == [0.0, 0.0]
+    assert api.state.q == [0.0, 0.0]
 

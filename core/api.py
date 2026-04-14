@@ -175,6 +175,7 @@ class RobotAPI:
         q_init: List[float],
     ) -> Dict[str, Any]:
         with self._lock:
+            # ik_config and rm_bridge are intentionally preserved across arm swaps.
             self.robot = robot
             self.state = state
             self._q_init = list(q_init)
