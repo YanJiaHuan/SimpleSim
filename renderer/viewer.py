@@ -7,9 +7,7 @@ from typing import Any, Dict
 from urllib.parse import urlparse
 
 from core.api import RobotAPI
-from core.state import make_initial_state
 from interface.keyboard import KeyboardInterface
-from loader.urdf import load_robot_model
 
 
 def _json_body(handler: SimpleHTTPRequestHandler) -> Dict[str, Any]:
@@ -41,7 +39,7 @@ class RuntimeServer:
         host: str,
         port: int,
         urdf_url: str,
-        urdf_path: Path,
+        arms_data: Dict[str, Any],
         config: Dict[str, Any],
         active_arm: str,
         refresh_interval_ms: int = 40,
@@ -52,7 +50,7 @@ class RuntimeServer:
         self.host = host
         self.port = port
         self.urdf_url = urdf_url
-        self.urdf_path = urdf_path
+        self.arms_data = arms_data
         self.config = config
         self.active_arm = active_arm
         self.refresh_interval_ms = refresh_interval_ms
@@ -79,19 +77,10 @@ class RuntimeServer:
         }
 
     def _switch_arm(self, arm_name: str) -> Dict[str, Any]:
-        arms = self.config.get("arms", {})
-        if arm_name not in arms:
+        if arm_name not in self.arms_data:
             raise ValueError(f"unknown arm '{arm_name}'")
 
-        arm_cfg = arms[arm_name]
-        robot = load_robot_model(
-            urdf_path=str(self.urdf_path),
-            base_link=str(arm_cfg["base_link"]),
-            ee_link=str(arm_cfg["ee_link"]),
-            expected_joint_names=[str(n) for n in arm_cfg.get("joint_names", [])],
-        )
-        q_init = [float(v) for v in arm_cfg.get("q_init", [0.0] * robot.dof)]
-        state = make_initial_state(robot, q_init)
+        robot, state, q_init = self.arms_data[arm_name]
         self.api.set_robot(robot=robot, state=state, q_init=q_init)
         self.active_arm = arm_name
         return self.api.snapshot()
@@ -177,7 +166,7 @@ def make_server(
     host: str,
     port: int,
     urdf_url: str,
-    urdf_path: Path,
+    arms_data: Dict[str, Any],
     config: Dict[str, Any],
     active_arm: str,
     refresh_interval_ms: int = 40,
@@ -189,7 +178,7 @@ def make_server(
         host=host,
         port=port,
         urdf_url=urdf_url,
-        urdf_path=urdf_path,
+        arms_data=arms_data,
         config=config,
         active_arm=active_arm,
         refresh_interval_ms=refresh_interval_ms,

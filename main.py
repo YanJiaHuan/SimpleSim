@@ -53,19 +53,26 @@ def main() -> None:
 
     config = _load_config(config_path)
     active_arm_name = str(config.get("active_arm", "left"))
-    arm_config = config.get("arms", {}).get(active_arm_name)
-    if arm_config is None:
+    if not config.get("arms", {}).get(active_arm_name):
         raise ValueError(f"No arm config named '{active_arm_name}'")
 
-    robot = load_robot_model(
-        urdf_path=str(urdf_path),
-        base_link=str(arm_config["base_link"]),
-        ee_link=str(arm_config["ee_link"]),
-        expected_joint_names=[str(name) for name in arm_config.get("joint_names", [])],
-    )
+    # Pre-load all arms so switching preserves each arm's pose.
+    arms_data: Dict[str, Any] = {}
+    for arm_name, arm_cfg in config.get("arms", {}).items():
+        arm_robot = load_robot_model(
+            urdf_path=str(urdf_path),
+            base_link=str(arm_cfg["base_link"]),
+            ee_link=str(arm_cfg["ee_link"]),
+            expected_joint_names=[str(n) for n in arm_cfg.get("joint_names", [])],
+        )
+        arm_q_init = [float(v) for v in arm_cfg.get("q_init", [0.0] * arm_robot.dof)]
+        arm_state = make_initial_state(arm_robot, arm_q_init)
+        arms_data[arm_name] = (arm_robot, arm_state, arm_q_init)
 
-    q_init = [float(v) for v in arm_config.get("q_init", [0.0] * robot.dof)]
-    state = make_initial_state(robot, q_init)
+    if active_arm_name not in arms_data:
+        raise ValueError(f"No arm config named '{active_arm_name}'")
+
+    robot, state, q_init = arms_data[active_arm_name]
     rm_bridge = RMArmBridge(config.get("rm_api", {}))
     api = RobotAPI(
         robot=robot,
@@ -93,7 +100,7 @@ def main() -> None:
         host=host,
         port=port,
         urdf_url=urdf_url,
-        urdf_path=urdf_path,
+        arms_data=arms_data,
         config=config,
         active_arm=active_arm_name,
         refresh_interval_ms=refresh_interval_ms,
