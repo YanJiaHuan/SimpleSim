@@ -25,12 +25,13 @@ class KeyboardInterface:
         r = self.rotation_step
         self._bindings: Dict[str, List[float]] = {
             # Translation
-            "KeyW": [0.0, -t,  0.0, 0.0, 0.0, 0.0],  # -Y forward (URDF Y+ = robot back)
-            "KeyS": [0.0,  t,  0.0, 0.0, 0.0, 0.0],  # +Y backward
-            "KeyD": [ t,  0.0, 0.0, 0.0, 0.0, 0.0],  # +X right
-            "KeyA": [-t,  0.0, 0.0, 0.0, 0.0, 0.0],  # -X left
-            "KeyQ": [0.0, 0.0,  t,  0.0, 0.0, 0.0],  # +Z up
-            "KeyE": [0.0, 0.0, -t,  0.0, 0.0, 0.0],  # -Z down
+            # URDF world axes observed: +X=up, -Y=fwd, +Z=right
+            "KeyW": [0.0,  -t,  0.0, 0.0, 0.0, 0.0],  # -Y_urdf = forward
+            "KeyS": [0.0,   t,  0.0, 0.0, 0.0, 0.0],  # +Y_urdf = backward
+            "KeyA": [0.0,  0.0, -t,  0.0, 0.0, 0.0],  # -Z_urdf = left
+            "KeyD": [0.0,  0.0,  t,  0.0, 0.0, 0.0],  # +Z_urdf = right
+            "KeyQ": [ t,   0.0, 0.0, 0.0, 0.0, 0.0],  # +X_urdf = up
+            "KeyE": [-t,   0.0, 0.0, 0.0, 0.0, 0.0],  # -X_urdf = down
             # Rotation
             "KeyJ": [0.0, 0.0, 0.0,  r,  0.0, 0.0],  # roll+
             "KeyU": [0.0, 0.0, 0.0, -r,  0.0, 0.0],  # roll-
