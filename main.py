@@ -29,9 +29,16 @@ def _to_url_path(path: Path, root: Path) -> str:
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="SimpleSim robot runtime")
-    parser.add_argument("--urdf", required=True, help="Path to URDF file")
-    parser.add_argument("--config", required=True, help="Path to config file")
-    parser.add_argument("--interface", default="keyboard", choices=["keyboard"])
+    parser.add_argument(
+        "--urdf",
+        default="TR4_Pro/TR4_with_grippers_v2.urdf",
+        help="Path to URDF file (default: TR4 Pro with grippers)",
+    )
+    parser.add_argument(
+        "--config",
+        default="configs/tr4.yaml",
+        help="Path to config file (default: configs/tr4.yaml)",
+    )
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
     return parser.parse_args()
@@ -61,9 +68,6 @@ def main() -> None:
     rm_bridge = RMArmBridge(config.get("rm_api", {}))
     api = RobotAPI(robot=robot, state=state, ik_config=config.get("ik", {}), rm_bridge=rm_bridge)
 
-    if args.interface != "keyboard":
-        raise ValueError("Only keyboard interface is supported")
-
     keyboard = KeyboardInterface(
         translation_step=float(config.get("keyboard", {}).get("translation_step", 0.01)),
         rotation_step=float(config.get("keyboard", {}).get("rotation_step", 0.05)),
@@ -86,10 +90,16 @@ def main() -> None:
     )
 
     print(f"SimpleSim running at http://{host}:{port}")
-    print(f"URDF: {urdf_url}")
-    print("Control: WASD/RF translation, QE + Arrow keys orientation")
+    print(f"  URDF       : {urdf_url}")
+    print(f"  Active arm : {active_arm_name}  ({robot.base_link} -> {robot.ee_link})")
+    print(f"  Refresh    : {refresh_interval_ms} ms")
+    print("Controls:")
+    print("  Translate  : W/S (x)   A/D (y)   R/F (z)")
+    print("  Rotate     : Q/E (yaw)   Up/Down (pitch)   Left/Right (roll)")
     if rm_bridge.error:
         print(f"RM_API2 disabled: {rm_bridge.error}")
+    elif rm_bridge.enabled:
+        print("RM_API2: connected")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
