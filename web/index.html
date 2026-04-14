@@ -16,23 +16,80 @@
 </head>
 <body>
   <aside class="panel">
-    <h1>SimpleSim</h1>
-    <p id="robot-name" class="muted">loading...</p>
-    <p id="status">state: booting</p>
+    <header class="panel-header">
+      <h1>SimpleSim</h1>
+      <p id="status" class="status">booting</p>
+    </header>
 
-    <h2>Control</h2>
-    <p>Translate: <code>W/S</code> <code>A/D</code> <code>R/F</code></p>
-    <p>Rotate: <code>Q/E</code> <code>↑/↓</code> <code>←/→</code></p>
+    <section class="card" id="card-info">
+      <h2>Robot</h2>
+      <p id="robot-name" class="muted">loading...</p>
+      <p id="robot-chain" class="muted"></p>
+      <p>Arm: <span id="arm-badge" class="badge">-</span></p>
+    </section>
 
-    <h2>EE Pose</h2>
-    <pre id="ee-pose">[]</pre>
+    <section class="card" id="card-keypad">
+      <h2>Keypad</h2>
+      <div class="keypad">
+        <div class="keypad-row">
+          <div class="key" data-code="KeyQ">Q</div>
+          <div class="key" data-code="KeyW">W</div>
+          <div class="key" data-code="KeyE">E</div>
+          <div class="key" data-code="KeyR">R</div>
+        </div>
+        <div class="keypad-row">
+          <div class="key" data-code="KeyA">A</div>
+          <div class="key" data-code="KeyS">S</div>
+          <div class="key" data-code="KeyD">D</div>
+          <div class="key" data-code="KeyF">F</div>
+        </div>
+        <div class="keypad-row">
+          <div class="key" data-code="ArrowUp">&uarr;</div>
+          <div class="key" data-code="ArrowDown">&darr;</div>
+          <div class="key" data-code="ArrowLeft">&larr;</div>
+          <div class="key" data-code="ArrowRight">&rarr;</div>
+        </div>
+      </div>
+      <p class="hint">WASD/RF translate &middot; QE yaw &middot; arrows pitch/roll</p>
+    </section>
 
-    <h2>IK</h2>
-    <pre id="ik-state">no command yet</pre>
+    <section class="card" id="card-pose">
+      <h2>EE Pose</h2>
+      <dl class="pose">
+        <dt>x</dt><dd id="pose-x">-</dd>
+        <dt>y</dt><dd id="pose-y">-</dd>
+        <dt>z</dt><dd id="pose-z">-</dd>
+        <dt>roll</dt><dd id="pose-roll">-</dd>
+        <dt>pitch</dt><dd id="pose-pitch">-</dd>
+        <dt>yaw</dt><dd id="pose-yaw">-</dd>
+      </dl>
+    </section>
+
+    <section class="card" id="card-joints">
+      <h2>Joints</h2>
+      <table class="joints">
+        <thead>
+          <tr><th>name</th><th>rad</th><th>deg</th><th></th></tr>
+        </thead>
+        <tbody id="joints-body"></tbody>
+      </table>
+    </section>
+
+    <section class="card" id="card-ik">
+      <h2>IK</h2>
+      <p><span id="ik-dot" class="dot"></span> <span id="ik-summary">idle</span></p>
+    </section>
+
+    <section class="card" id="card-actions">
+      <h2>Actions</h2>
+      <div class="actions">
+        <button type="button" id="btn-home">Home</button>
+        <button type="button" id="btn-arm">Switch Arm</button>
+      </div>
+    </section>
   </aside>
 
   <main id="viewer"></main>
   <script type="module" src="/web/app.js"></script>
 </body>
 </html>
-

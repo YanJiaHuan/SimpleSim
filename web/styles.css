@@ -1,79 +1,174 @@
-html,
-body {
+:root {
+  --bg: #0f172a;
+  --panel: #111827;
+  --card: #1f2937;
+  --border: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #22d3ee;
+  --good: #22c55e;
+  --bad: #ef4444;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
   margin: 0;
-  width: 100%;
   height: 100%;
-  overflow: hidden;
-  font-family: "IBM Plex Sans", "Noto Sans SC", sans-serif;
-  background: linear-gradient(160deg, #eff6ff 0%, #f8fafc 100%);
-  color: #0f172a;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
 }
 
 body {
-  display: grid;
-  grid-template-columns: 320px 1fr;
+  display: flex;
 }
 
 .panel {
-  box-sizing: border-box;
-  padding: 20px;
-  border-right: 1px solid #cbd5e1;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(8px);
+  width: 340px;
+  min-width: 340px;
+  padding: 16px;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
   overflow-y: auto;
 }
 
-.panel h1 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 24px;
+.panel-header h1 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  letter-spacing: 0.04em;
 }
 
-.panel h2 {
-  margin-top: 20px;
-  margin-bottom: 8px;
-  font-size: 16px;
-}
-
-.panel p,
-.panel pre {
-  margin: 6px 0;
-  font-size: 13px;
-}
-
-.panel code {
-  font-family: "JetBrains Mono", monospace;
+.status {
+  margin: 0 0 12px 0;
   font-size: 12px;
-  background: #e2e8f0;
+  color: var(--muted);
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.card h2 {
+  margin: 0 0 8px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.muted { color: var(--muted); font-size: 12px; margin: 2px 0; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #0f172a;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+/* Keypad */
+.keypad { display: flex; flex-direction: column; gap: 4px; }
+.keypad-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.key {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  padding: 8px 0;
+  text-align: center;
+  background: #0f172a;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 1px 4px;
+  user-select: none;
+  transition: background 40ms, color 40ms;
+}
+.key.active {
+  background: var(--accent);
+  color: #0f172a;
+  border-color: var(--accent);
+}
+.hint {
+  margin: 8px 0 0 0;
+  font-size: 11px;
+  color: var(--muted);
 }
 
-.muted {
-  color: #475569;
+/* EE Pose */
+.pose {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
 }
+.pose dt { color: var(--muted); }
+.pose dd { margin: 0; text-align: right; }
 
-#viewer {
+/* Joints table */
+.joints {
   width: 100%;
-  height: 100%;
+  font-size: 11px;
+  border-collapse: collapse;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.joints th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 500;
+  padding-bottom: 4px;
+}
+.joints td { padding: 2px 4px 2px 0; }
+.joints td.num { text-align: right; }
+.joint-bar {
   position: relative;
+  height: 4px;
+  background: #0f172a;
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 40px;
+}
+.joint-bar > span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
 }
 
-#viewer canvas {
-  display: block;
-  width: 100%;
-  height: 100%;
+/* IK dot */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted);
+  margin-right: 6px;
+  vertical-align: middle;
 }
+.dot.good { background: var(--good); }
+.dot.bad  { background: var(--bad); }
 
-@media (max-width: 900px) {
-  body {
-    grid-template-columns: 1fr;
-    grid-template-rows: 260px 1fr;
-  }
-
-  .panel {
-    border-right: none;
-    border-bottom: 1px solid #cbd5e1;
-  }
+/* Actions */
+.actions { display: flex; gap: 6px; }
+.actions button {
+  flex: 1;
+  padding: 6px 0;
+  background: #0f172a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
 }
+.actions button:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Viewer */
+#viewer { flex: 1; position: relative; overflow: hidden; }
+#viewer canvas { display: block; }
