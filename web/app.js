@@ -3,6 +3,7 @@ import {
   Box3,
   Color,
   DirectionalLight,
+  LoadingManager,
   Mesh,
   PerspectiveCamera,
   PlaneGeometry,
@@ -273,9 +274,18 @@ async function reloadRobot() {
     robot = null;
   }
 
-  const loader = new URDFLoader();
+  const manager = new LoadingManager();
+  const loader = new URDFLoader(manager);
+
+  // Wait for URDF parse + all mesh assets to finish loading.
   const loaded = await new Promise((resolve, reject) => {
-    loader.load(meta.urdf_url, resolve, undefined, reject);
+    manager.onError = reject;
+    loader.load(meta.urdf_url, robot => {
+      new Promise(res => {
+        if (manager.itemsLoaded >= manager.itemsTotal) { res(); }
+        else { manager.onLoad = res; }
+      }).then(() => resolve(robot));
+    }, undefined, reject);
   });
 
   // ROS is Z-up; Three.js is Y-up. Rotate -90° around X to stand the robot upright.
