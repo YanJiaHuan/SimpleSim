@@ -12,7 +12,8 @@ die() { echo "error: $*" >&2; exit 1; }
 [[ -f node_modules/three/build/three.module.js ]] \
   || die "missing three.js — run: npm install"
 
-python -c "import numpy" 2>/dev/null \
-  || die "missing python deps — run: pip install numpy pytest"
+PYTHON="${PYTHON:-python3}"
+"$PYTHON" -c "import numpy" 2>/dev/null \
+  || die "missing python deps — run: $PYTHON -m pip install numpy pytest"
 
-exec python main.py "$@"
+exec "$PYTHON" main.py "$@"
