@@ -274,10 +274,12 @@ async function reloadRobot() {
   }
 
   const loader = new URDFLoader();
-  loader.up = '+Z';
   const loaded = await new Promise((resolve, reject) => {
     loader.load(meta.urdf_url, resolve, undefined, reject);
   });
+
+  // ROS is Z-up; Three.js is Y-up. Rotate -90° around X to stand the robot upright.
+  loaded.rotation.x = -Math.PI / 2;
 
   loaded.traverse(node => { node.castShadow = true; });
   scene.add(loaded);
