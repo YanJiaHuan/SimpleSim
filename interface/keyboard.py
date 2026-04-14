@@ -25,8 +25,8 @@ class KeyboardInterface:
         r = self.rotation_step
         self._bindings: Dict[str, List[float]] = {
             # Translation
-            "KeyW": [0.0,  t,  0.0, 0.0, 0.0, 0.0],  # +Y forward
-            "KeyS": [0.0, -t,  0.0, 0.0, 0.0, 0.0],  # -Y backward
+            "KeyW": [0.0, -t,  0.0, 0.0, 0.0, 0.0],  # -Y forward (URDF Y+ = robot back)
+            "KeyS": [0.0,  t,  0.0, 0.0, 0.0, 0.0],  # +Y backward
             "KeyD": [ t,  0.0, 0.0, 0.0, 0.0, 0.0],  # +X right
             "KeyA": [-t,  0.0, 0.0, 0.0, 0.0, 0.0],  # -X left
             "KeyQ": [0.0, 0.0,  t,  0.0, 0.0, 0.0],  # +Z up
