@@ -274,6 +274,7 @@ async function reloadRobot() {
   }
 
   const loader = new URDFLoader();
+  loader.up = '+Z';
   const loaded = await new Promise((resolve, reject) => {
     loader.load(meta.urdf_url, resolve, undefined, reject);
   });
