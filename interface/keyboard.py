@@ -8,19 +8,24 @@ from core.api import RobotAPI
 def robot_to_urdf(delta: List[float]) -> List[float]:
     """Convert EE delta from robot frame to URDF world frame.
 
-    TR4 Pro arms are side-mounted.  The observed axis correspondence is:
-        robot +X (right)   = URDF +Z
-        robot +Y (forward) = URDF -Y
-        robot +Z (up)      = URDF +X
+    After world-frame FK fix, both arms share the same URDF world frame.
+    Standard ROS convention: world X = forward, world Y = left, world Z = up.
 
-    Position transform:  [dx, dy, dz] -> [dz, -dy, dx]
-    Rotation transform:  [roll, pitch, yaw] -> [yaw, -pitch, roll]
-      (roll  about robot X = about URDF Z = URDF yaw)
-      (pitch about robot Y = about -URDF Y = -URDF pitch)
-      (yaw   about robot Z = about URDF X = URDF roll)
+    Robot frame: X = right, Y = forward, Z = up.
+
+    Axis correspondence:
+        robot +X (right)   = world -Y  (world Y is left)
+        robot +Y (forward) = world +X
+        robot +Z (up)      = world +Z
+
+    Position transform:  [dx, dy, dz] -> [dy, -dx, dz]
+    Rotation transform:  [roll, pitch, yaw] -> [pitch, -roll, yaw]
+      (roll  about robot X = about world -Y = -world pitch)
+      (pitch about robot Y = about world +X = +world roll)
+      (yaw   about robot Z = about world +Z = +world yaw)
     """
     dx, dy, dz, roll, pitch, yaw = delta
-    return [dz, -dy, dx, yaw, -pitch, roll]
+    return [dy, -dx, dz, pitch, -roll, yaw]
 
 
 class KeyboardInterface:
