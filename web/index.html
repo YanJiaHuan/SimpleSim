@@ -30,27 +30,43 @@
 
     <section class="card" id="card-keypad">
       <h2>Keypad</h2>
-      <div class="keypad">
-        <div class="keypad-row">
-          <div class="key" data-code="KeyQ">Q</div>
-          <div class="key" data-code="KeyW">W</div>
-          <div class="key" data-code="KeyE">E</div>
-          <div class="key" data-code="KeyR">R</div>
+      <div class="keypad-group">
+        <p class="keypad-label">Translate</p>
+        <div class="keypad">
+          <div class="keypad-row">
+            <div class="key" data-code="KeyQ">Q</div>
+            <div class="key" data-code="KeyW">W</div>
+            <div class="key" data-code="KeyE">E</div>
+          </div>
+          <div class="keypad-row">
+            <div class="key" data-code="KeyA">A</div>
+            <div class="key" data-code="KeyS">S</div>
+            <div class="key" data-code="KeyD">D</div>
+          </div>
         </div>
-        <div class="keypad-row">
-          <div class="key" data-code="KeyA">A</div>
-          <div class="key" data-code="KeyS">S</div>
-          <div class="key" data-code="KeyD">D</div>
-          <div class="key" data-code="KeyF">F</div>
+        <p class="hint">Q/E up·down &nbsp; W/S fwd·back &nbsp; A/D left·right</p>
+      </div>
+      <div class="keypad-group">
+        <p class="keypad-label">Rotate</p>
+        <div class="keypad">
+          <div class="keypad-row">
+            <div class="key" data-code="KeyJ">J</div>
+            <div class="key" data-code="KeyK">K</div>
+            <div class="key" data-code="KeyL">L</div>
+          </div>
+          <div class="keypad-row">
+            <div class="key" data-code="KeyU">U</div>
+            <div class="key" data-code="KeyI">I</div>
+            <div class="key" data-code="KeyO">O</div>
+          </div>
         </div>
+        <p class="hint">J/U roll &nbsp; K/I pitch &nbsp; L/O yaw</p>
+      </div>
+      <div class="keypad-group">
         <div class="keypad-row">
-          <div class="key" data-code="ArrowUp">&uarr;</div>
-          <div class="key" data-code="ArrowDown">&darr;</div>
-          <div class="key" data-code="ArrowLeft">&larr;</div>
-          <div class="key" data-code="ArrowRight">&rarr;</div>
+          <div class="key key-wide" data-code="KeyC">C &nbsp; switch arm</div>
         </div>
       </div>
-      <p class="hint">WASD/RF translate &middot; QE yaw &middot; arrows pitch/roll</p>
     </section>
 
     <section class="card" id="card-pose">

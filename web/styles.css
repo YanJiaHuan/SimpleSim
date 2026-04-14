@@ -75,12 +75,15 @@ body {
 }
 
 /* Keypad */
+.keypad-group { margin-bottom: 8px; }
+.keypad-group:last-child { margin-bottom: 0; }
+.keypad-label { margin: 0 0 4px 0; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .keypad { display: flex; flex-direction: column; gap: 4px; }
-.keypad-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.keypad-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
 .key {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12px;
-  padding: 8px 0;
+  padding: 7px 0;
   text-align: center;
   background: #0f172a;
   border: 1px solid var(--border);
@@ -93,8 +96,9 @@ body {
   color: #0f172a;
   border-color: var(--accent);
 }
+.key-wide { grid-column: 1 / -1; }
 .hint {
-  margin: 8px 0 0 0;
+  margin: 4px 0 0 0;
   font-size: 11px;
   color: var(--muted);
 }

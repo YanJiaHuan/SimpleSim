@@ -43,9 +43,10 @@ document.querySelectorAll('.key').forEach(el => {
 
 const activeKeys = new Set();
 const acceptedKeys = new Set([
-  'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyR', 'KeyF',
-  'KeyQ', 'KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE',
+  'KeyJ', 'KeyU', 'KeyK', 'KeyI', 'KeyL', 'KeyO',
 ]);
+const switchArmKey = 'KeyC';
 
 let meta = null;
 let robot = null;
@@ -291,6 +292,13 @@ async function reloadRobot() {
 
 function setupKeyboard() {
   document.addEventListener('keydown', event => {
+    if (event.code === switchArmKey) {
+      event.preventDefault();
+      const el = keyEls.get(switchArmKey);
+      el?.classList.add('active');
+      doSwitchArm().then(() => el?.classList.remove('active'));
+      return;
+    }
     if (!acceptedKeys.has(event.code)) return;
     event.preventDefault();
     activeKeys.add(event.code);

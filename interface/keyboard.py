@@ -6,27 +6,38 @@ from core.api import RobotAPI
 
 
 class KeyboardInterface:
-    """Keyboard -> EE delta command. No direct joint editing here."""
+    """Keyboard -> EE delta command. No direct joint editing here.
 
-    def __init__(self, translation_step: float = 0.01, rotation_step: float = 0.05) -> None:
+    Coordinate convention (x+ right, y+ forward, z+ up):
+      W/S  — translate Y (forward / backward)
+      A/D  — translate X (left / right)
+      Q/E  — translate Z (up / down)
+      J/U  — rotate roll  (+/-)
+      K/I  — rotate pitch (+/-)
+      L/O  — rotate yaw   (+/-)
+    """
+
+    def __init__(self, translation_step: float = 0.01, rotation_step: float = 0.04) -> None:
         self.translation_step = float(translation_step)
         self.rotation_step = float(rotation_step)
 
         t = self.translation_step
         r = self.rotation_step
         self._bindings: Dict[str, List[float]] = {
-            "KeyW": [t, 0.0, 0.0, 0.0, 0.0, 0.0],
-            "KeyS": [-t, 0.0, 0.0, 0.0, 0.0, 0.0],
-            "KeyA": [0.0, t, 0.0, 0.0, 0.0, 0.0],
-            "KeyD": [0.0, -t, 0.0, 0.0, 0.0, 0.0],
-            "KeyR": [0.0, 0.0, t, 0.0, 0.0, 0.0],
-            "KeyF": [0.0, 0.0, -t, 0.0, 0.0, 0.0],
-            "KeyQ": [0.0, 0.0, 0.0, r, 0.0, 0.0],
-            "KeyE": [0.0, 0.0, 0.0, -r, 0.0, 0.0],
-            "ArrowUp": [0.0, 0.0, 0.0, 0.0, r, 0.0],
-            "ArrowDown": [0.0, 0.0, 0.0, 0.0, -r, 0.0],
-            "ArrowLeft": [0.0, 0.0, 0.0, 0.0, 0.0, r],
-            "ArrowRight": [0.0, 0.0, 0.0, 0.0, 0.0, -r],
+            # Translation
+            "KeyW": [0.0,  t,  0.0, 0.0, 0.0, 0.0],  # +Y forward
+            "KeyS": [0.0, -t,  0.0, 0.0, 0.0, 0.0],  # -Y backward
+            "KeyD": [ t,  0.0, 0.0, 0.0, 0.0, 0.0],  # +X right
+            "KeyA": [-t,  0.0, 0.0, 0.0, 0.0, 0.0],  # -X left
+            "KeyQ": [0.0, 0.0,  t,  0.0, 0.0, 0.0],  # +Z up
+            "KeyE": [0.0, 0.0, -t,  0.0, 0.0, 0.0],  # -Z down
+            # Rotation
+            "KeyJ": [0.0, 0.0, 0.0,  r,  0.0, 0.0],  # roll+
+            "KeyU": [0.0, 0.0, 0.0, -r,  0.0, 0.0],  # roll-
+            "KeyK": [0.0, 0.0, 0.0, 0.0,  r,  0.0],  # pitch+
+            "KeyI": [0.0, 0.0, 0.0, 0.0, -r,  0.0],  # pitch-
+            "KeyL": [0.0, 0.0, 0.0, 0.0, 0.0,  r ],  # yaw+
+            "KeyO": [0.0, 0.0, 0.0, 0.0, 0.0, -r ],  # yaw-
         }
 
     def delta_from_keys(self, keys: List[str]) -> List[float]:
@@ -49,4 +60,3 @@ class KeyboardInterface:
         out = api.step_ee(delta)
         out.update({"moved": True, "delta": delta, "keys": keys})
         return out
-
