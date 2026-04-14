@@ -47,6 +47,7 @@ const acceptedKeys = new Set([
   'KeyJ', 'KeyU', 'KeyK', 'KeyI', 'KeyL', 'KeyO',
 ]);
 const switchArmKey = 'KeyC';
+const resetKey = 'KeyR';
 
 let meta = null;
 let robot = null;
@@ -292,6 +293,13 @@ async function reloadRobot() {
 
 function setupKeyboard() {
   document.addEventListener('keydown', event => {
+    if (event.code === resetKey) {
+      event.preventDefault();
+      const el = keyEls.get(resetKey);
+      el?.classList.add('active');
+      doHome().then(() => el?.classList.remove('active'));
+      return;
+    }
     if (event.code === switchArmKey) {
       event.preventDefault();
       const el = keyEls.get(switchArmKey);
