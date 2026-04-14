@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 
 Vector3 = Tuple[float, float, float]
+Matrix4 = List[List[float]]
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,9 @@ class RobotModel:
     segments: List[KinematicSegment]
     joint_names: List[str]
     joint_limits: Dict[str, JointLimit]
+    # Static transform from URDF world origin to this arm's base_link.
+    # When set, FK outputs poses in world frame (same frame for all arms).
+    base_world_transform: Optional[Matrix4] = None
     _joint_index: Dict[str, int] = field(init=False, repr=False)
 
     def __post_init__(self) -> None:

@@ -167,7 +167,11 @@ def forward_kinematics_matrix(
     q_clamped = robot.clamp_q(q)
     q_by_name = {name: q_clamped[idx] for idx, name in enumerate(robot.joint_names)}
 
-    transform = _identity4()
+    # Start in world frame if the loader provided the base_link's world transform.
+    if robot.base_world_transform is not None:
+        transform = [row[:] for row in robot.base_world_transform]
+    else:
+        transform = _identity4()
     joint_frames: List[JointFrame] = []
 
     for segment in robot.segments:

@@ -206,6 +206,7 @@ async function doSwitchArm() {
   if (arms.length < 2) return;
   const next = arms.find(a => a !== meta.active_arm) || arms[0];
   try {
+    const prevUrdfUrl = meta.urdf_url;
     const response = await fetchJson('/api/switch_arm', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -213,7 +214,7 @@ async function doSwitchArm() {
     });
     meta = response.meta;
     applyMeta(meta);
-    await reloadRobot();
+    if (meta.urdf_url !== prevUrdfUrl) await reloadRobot();
     applyState(response.state);
     statusEl.textContent = `arm: ${next}`;
   } catch (err) {

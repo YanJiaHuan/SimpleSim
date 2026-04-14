@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from core.fk import _identity4, _mat4_mul, _transform_from_xyz_rpy
 from core.robot import JointLimit, KinematicSegment, RobotModel
 
 
@@ -57,6 +58,34 @@ def _limit_from_joint(joint_type: str, limit_node: ET.Element | None) -> JointLi
     lower = float(limit_node.attrib.get("lower", "-3.141592653589793"))
     upper = float(limit_node.attrib.get("upper", "3.141592653589793"))
     return JointLimit(lower=lower, upper=upper)
+
+
+def _base_link_world_transform(
+    joints: Dict[str, KinematicSegment],
+    base_link: str,
+) -> List[List[float]]:
+    """Compute the static transform from URDF world origin to base_link.
+
+    Walks up the kinematic tree from base_link to the root, accumulating
+    origin transforms only (joint motion at q=0 is identity for revolute/prismatic,
+    so only the origin offset matters).
+    """
+    child_to_joint: Dict[str, KinematicSegment] = {seg.child: seg for seg in joints.values()}
+
+    chain: List[KinematicSegment] = []
+    link = base_link
+    while link in child_to_joint:
+        seg = child_to_joint[link]
+        chain.append(seg)
+        link = seg.parent
+    chain.reverse()  # root → base_link
+
+    transform = _identity4()
+    for seg in chain:
+        t_origin = _transform_from_xyz_rpy(seg.origin_xyz, seg.origin_rpy)
+        transform = _mat4_mul(transform, t_origin)
+
+    return transform
 
 
 def load_robot_model(
@@ -128,6 +157,8 @@ def load_robot_model(
         if seg.actuated and seg.limit is not None
     }
 
+    base_world_transform = _base_link_world_transform(joints, base_link)
+
     return RobotModel(
         name=root.attrib.get("name", "robot"),
         urdf_path=str(urdf_abs),
@@ -136,5 +167,6 @@ def load_robot_model(
         segments=segments,
         joint_names=actuated_joint_names,
         joint_limits=joint_limits,
+        base_world_transform=base_world_transform,
     )
 
