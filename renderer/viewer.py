@@ -76,6 +76,18 @@ class RuntimeServer:
             "refresh_interval_ms": self.refresh_interval_ms,
         }
 
+    def _all_joints(self) -> Dict[str, float]:
+        """Return joint_name -> current_value for every arm."""
+        result: Dict[str, float] = {}
+        for _arm_name, (robot, state, _q_init) in self.arms_data.items():
+            for i, name in enumerate(robot.joint_names):
+                result[name] = state.q[i]
+        return result
+
+    def _with_all_joints(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        state["all_joints"] = self._all_joints()
+        return state
+
     def _switch_arm(self, arm_name: str) -> Dict[str, Any]:
         if arm_name not in self.arms_data:
             raise ValueError(f"unknown arm '{arm_name}'")
@@ -100,7 +112,7 @@ class RuntimeServer:
                 path = urlparse(self.path).path
 
                 if path == "/api/state":
-                    return _send_json(self, server_ref.api.snapshot())
+                    return _send_json(self, server_ref._with_all_joints(server_ref.api.snapshot()))
 
                 if path == "/api/meta":
                     return _send_json(self, server_ref._meta_payload())
@@ -124,24 +136,29 @@ class RuntimeServer:
                         keys = payload.get("keys", [])
                         return _send_json(
                             self,
-                            server_ref.keyboard.apply_keys(keys, server_ref.api),
+                            server_ref._with_all_joints(
+                                server_ref.keyboard.apply_keys(keys, server_ref.api)
+                            ),
                         )
 
                     if path == "/api/move_joint":
-                        return _send_json(self, server_ref.api.move_joint(payload["q"]))
+                        return _send_json(self, server_ref._with_all_joints(server_ref.api.move_joint(payload["q"])))
 
                     if path == "/api/move_ee":
-                        return _send_json(self, server_ref.api.move_ee(payload["pose"]))
+                        return _send_json(self, server_ref._with_all_joints(server_ref.api.move_ee(payload["pose"])))
 
                     if path == "/api/home":
-                        return _send_json(self, server_ref.api.home())
+                        return _send_json(self, server_ref._with_all_joints(server_ref.api.home()))
 
                     if path == "/api/switch_arm":
                         arm_name = str(payload.get("arm", ""))
                         snapshot = server_ref._switch_arm(arm_name)
                         return _send_json(
                             self,
-                            {"meta": server_ref._meta_payload(), "state": snapshot},
+                            {
+                                "meta": server_ref._meta_payload(),
+                                "state": server_ref._with_all_joints(snapshot),
+                            },
                         )
 
                     return _send_json(self, {"success": False, "error": "not found"}, status=404)

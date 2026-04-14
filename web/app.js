@@ -131,12 +131,16 @@ function applyState(state) {
   if (state.joint_names && state.q) applyJoints(state.joint_names, state.q);
   if (state.ik || state.success === false) applyIk(state.ik, state.success);
 
-  if (robot && state.joint_names && state.q) {
-    const joints = {};
-    for (let i = 0; i < state.joint_names.length; i += 1) {
-      joints[state.joint_names[i]] = state.q[i];
+  if (robot) {
+    if (state.all_joints) {
+      robot.setJointValues(state.all_joints);
+    } else if (state.joint_names && state.q) {
+      const joints = {};
+      for (let i = 0; i < state.joint_names.length; i += 1) {
+        joints[state.joint_names[i]] = state.q[i];
+      }
+      robot.setJointValues(joints);
     }
-    robot.setJointValues(joints);
     robot.updateMatrixWorld(true);
   }
 }
