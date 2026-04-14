@@ -46,6 +46,7 @@ const activeKeys = new Set();
 const acceptedKeys = new Set([
   'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE',
   'KeyJ', 'KeyU', 'KeyK', 'KeyI', 'KeyL', 'KeyO',
+  'ArrowUp', 'ArrowDown', 'KeyG', 'KeyB',
 ]);
 const switchArmKey = 'KeyC';
 const resetKey = 'KeyR';

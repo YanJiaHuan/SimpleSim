@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+from core.accessories import AccessoryController
 from core.api import RMArmBridge, RobotAPI
 from core.state import make_initial_state
 from interface.keyboard import KeyboardInterface
@@ -82,6 +83,8 @@ def main() -> None:
         q_init=q_init,
     )
 
+    accessory = AccessoryController(config)
+
     keyboard = KeyboardInterface(
         translation_step=float(config.get("keyboard", {}).get("translation_step", 0.01)),
         rotation_step=float(config.get("keyboard", {}).get("rotation_step", 0.05)),
@@ -96,6 +99,7 @@ def main() -> None:
     server = make_server(
         api=api,
         keyboard=keyboard,
+        accessory=accessory,
         static_root=project_root,
         host=host,
         port=port,

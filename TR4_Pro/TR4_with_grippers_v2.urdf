@@ -50,7 +50,7 @@
     <parent link="base_link"/>
     <child link="torso"/>
     <axis xyz="0 0 1"/>
-    <limit effort="0" lower="0" upper="0" velocity="0"/>
+    <limit effort="0" lower="0" upper="0.35" velocity="0"/>
   </joint>
 
   <!-- Base Link -->

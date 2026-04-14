@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Dict
 from urllib.parse import urlparse
 
+from core.accessories import AccessoryController
 from core.api import RobotAPI
 from interface.keyboard import KeyboardInterface
 
@@ -35,6 +36,7 @@ class RuntimeServer:
         self,
         api: RobotAPI,
         keyboard: KeyboardInterface,
+        accessory: AccessoryController,
         static_root: Path,
         host: str,
         port: int,
@@ -46,6 +48,7 @@ class RuntimeServer:
     ) -> None:
         self.api = api
         self.keyboard = keyboard
+        self.accessory = accessory
         self.static_root = static_root
         self.host = host
         self.port = port
@@ -77,11 +80,12 @@ class RuntimeServer:
         }
 
     def _all_joints(self) -> Dict[str, float]:
-        """Return joint_name -> current_value for every arm."""
+        """Return joint_name -> current_value for every arm plus accessories."""
         result: Dict[str, float] = {}
         for _arm_name, (robot, state, _q_init) in self.arms_data.items():
             for i, name in enumerate(robot.joint_names):
                 result[name] = state.q[i]
+        result.update(self.accessory.joint_values())
         return result
 
     def _with_all_joints(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -134,6 +138,16 @@ class RuntimeServer:
                 try:
                     if path == "/api/keyboard":
                         keys = payload.get("keys", [])
+                        # Elevator
+                        if "ArrowUp" in keys:
+                            server_ref.accessory.step_elevator(+1)
+                        if "ArrowDown" in keys:
+                            server_ref.accessory.step_elevator(-1)
+                        # Gripper (G=close, B=open, both for active arm)
+                        if "KeyG" in keys:
+                            server_ref.accessory.step_gripper(server_ref.active_arm, +1)
+                        if "KeyB" in keys:
+                            server_ref.accessory.step_gripper(server_ref.active_arm, -1)
                         return _send_json(
                             self,
                             server_ref._with_all_joints(
@@ -179,6 +193,7 @@ class RuntimeServer:
 def make_server(
     api: RobotAPI,
     keyboard: KeyboardInterface,
+    accessory: AccessoryController,
     static_root: Path,
     host: str,
     port: int,
@@ -191,6 +206,7 @@ def make_server(
     return RuntimeServer(
         api=api,
         keyboard=keyboard,
+        accessory=accessory,
         static_root=static_root,
         host=host,
         port=port,

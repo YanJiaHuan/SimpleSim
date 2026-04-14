@@ -12,7 +12,7 @@
         "left_arm_joint5",
         "left_arm_joint6"
       ],
-      "q_init": [0.391495, 0.876906, 1.148531, 1.374168, 1.281351, -2.651574]
+      "q_init": [-2.91, -0.83, -1.25, 1.58, 1.66, 3.66]
     },
     "right": {
       "base_link": "right_arm_base_link",
@@ -25,7 +25,7 @@
         "right_arm_joint5",
         "right_arm_joint6"
       ],
-      "q_init": [-0.391495, 0.876906, 1.148531, 1.374168, 1.281351, -2.651574]
+      "q_init": [-0.391495, 0.876906, 0.92, 1.55, 1.83, -3.54]
     }
   },
   "ik": {
@@ -37,6 +37,32 @@
     "min_step": 0.000001,
     "alpha": 1.0,
     "orientation_weight": 0.5
+  },
+  "elevator": {
+    "joint_name": "elevation",
+    "lower": 0.0,
+    "upper": 0.35,
+    "step": 0.005
+  },
+  "grippers": {
+    "left": {
+      "joint_names": [
+        "left_gripper_l_joint1", "left_gripper_l_joint2", "left_gripper_l_joint3",
+        "left_gripper_r_joint1", "left_gripper_r_joint2", "left_gripper_r_joint3"
+      ],
+      "coupling": [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0],
+      "max_angle": 1.0472,
+      "step": 0.05
+    },
+    "right": {
+      "joint_names": [
+        "right_gripper_l_joint1", "right_gripper_l_joint2", "right_gripper_l_joint3",
+        "right_gripper_r_joint1", "right_gripper_r_joint2", "right_gripper_r_joint3"
+      ],
+      "coupling": [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0],
+      "max_angle": 1.0472,
+      "step": 0.05
+    }
   },
   "keyboard": {
     "translation_step": 0.01,
