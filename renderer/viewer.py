@@ -7,7 +7,9 @@ from typing import Any, Dict
 from urllib.parse import urlparse
 
 from core.api import RobotAPI
+from core.state import make_initial_state
 from interface.keyboard import KeyboardInterface
+from loader.urdf import load_robot_model
 
 
 def _json_body(handler: SimpleHTTPRequestHandler) -> Dict[str, Any]:
@@ -39,6 +41,9 @@ class RuntimeServer:
         host: str,
         port: int,
         urdf_url: str,
+        urdf_path: Path,
+        config: Dict[str, Any],
+        active_arm: str,
         refresh_interval_ms: int = 40,
     ) -> None:
         self.api = api
@@ -47,13 +52,52 @@ class RuntimeServer:
         self.host = host
         self.port = port
         self.urdf_url = urdf_url
+        self.urdf_path = urdf_path
+        self.config = config
+        self.active_arm = active_arm
         self.refresh_interval_ms = refresh_interval_ms
 
+    def _meta_payload(self) -> Dict[str, Any]:
+        robot = self.api.robot
+        joint_limits = {
+            name: [limit.lower, limit.upper]
+            for name, limit in robot.joint_limits.items()
+        }
+        arm_cfg = self.config.get("arms", {}).get(self.active_arm, {})
+        q_init = [float(v) for v in arm_cfg.get("q_init", [0.0] * robot.dof)]
+        return {
+            "urdf_url": self.urdf_url,
+            "robot_name": robot.name,
+            "base_link": robot.base_link,
+            "ee_link": robot.ee_link,
+            "joint_names": robot.joint_names,
+            "joint_limits": joint_limits,
+            "q_init": q_init,
+            "active_arm": self.active_arm,
+            "available_arms": sorted(self.config.get("arms", {}).keys()),
+            "refresh_interval_ms": self.refresh_interval_ms,
+        }
+
+    def _switch_arm(self, arm_name: str) -> Dict[str, Any]:
+        arms = self.config.get("arms", {})
+        if arm_name not in arms:
+            raise ValueError(f"unknown arm '{arm_name}'")
+
+        arm_cfg = arms[arm_name]
+        robot = load_robot_model(
+            urdf_path=str(self.urdf_path),
+            base_link=str(arm_cfg["base_link"]),
+            ee_link=str(arm_cfg["ee_link"]),
+            expected_joint_names=[str(n) for n in arm_cfg.get("joint_names", [])],
+        )
+        q_init = [float(v) for v in arm_cfg.get("q_init", [0.0] * robot.dof)]
+        state = make_initial_state(robot, q_init)
+        self.api.set_robot(robot=robot, state=state, q_init=q_init)
+        self.active_arm = arm_name
+        return self.api.snapshot()
+
     def _build_handler(self):
-        api = self.api
-        keyboard = self.keyboard
-        urdf_url = self.urdf_url
-        refresh_interval_ms = self.refresh_interval_ms
+        server_ref = self
         directory = str(self.static_root)
 
         class Handler(SimpleHTTPRequestHandler):
@@ -67,20 +111,10 @@ class RuntimeServer:
                 path = urlparse(self.path).path
 
                 if path == "/api/state":
-                    return _send_json(self, api.snapshot())
+                    return _send_json(self, server_ref.api.snapshot())
 
                 if path == "/api/meta":
-                    return _send_json(
-                        self,
-                        {
-                            "urdf_url": urdf_url,
-                            "joint_names": api.robot.joint_names,
-                            "base_link": api.robot.base_link,
-                            "ee_link": api.robot.ee_link,
-                            "refresh_interval_ms": refresh_interval_ms,
-                            "robot_name": api.robot.name,
-                        },
-                    )
+                    return _send_json(self, server_ref._meta_payload())
 
                 if path == "/":
                     self.path = "/web/index.html"
@@ -99,13 +133,27 @@ class RuntimeServer:
                 try:
                     if path == "/api/keyboard":
                         keys = payload.get("keys", [])
-                        return _send_json(self, keyboard.apply_keys(keys, api))
+                        return _send_json(
+                            self,
+                            server_ref.keyboard.apply_keys(keys, server_ref.api),
+                        )
 
                     if path == "/api/move_joint":
-                        return _send_json(self, api.move_joint(payload["q"]))
+                        return _send_json(self, server_ref.api.move_joint(payload["q"]))
 
                     if path == "/api/move_ee":
-                        return _send_json(self, api.move_ee(payload["pose"]))
+                        return _send_json(self, server_ref.api.move_ee(payload["pose"]))
+
+                    if path == "/api/home":
+                        return _send_json(self, server_ref.api.home())
+
+                    if path == "/api/switch_arm":
+                        arm_name = str(payload.get("arm", ""))
+                        snapshot = server_ref._switch_arm(arm_name)
+                        return _send_json(
+                            self,
+                            {"meta": server_ref._meta_payload(), "state": snapshot},
+                        )
 
                     return _send_json(self, {"success": False, "error": "not found"}, status=404)
                 except Exception as exc:
@@ -129,6 +177,9 @@ def make_server(
     host: str,
     port: int,
     urdf_url: str,
+    urdf_path: Path,
+    config: Dict[str, Any],
+    active_arm: str,
     refresh_interval_ms: int = 40,
 ) -> RuntimeServer:
     return RuntimeServer(
@@ -138,5 +189,8 @@ def make_server(
         host=host,
         port=port,
         urdf_url=urdf_url,
+        urdf_path=urdf_path,
+        config=config,
+        active_arm=active_arm,
         refresh_interval_ms=refresh_interval_ms,
     )

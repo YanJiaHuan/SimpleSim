@@ -93,6 +93,9 @@ def main() -> None:
         host=host,
         port=port,
         urdf_url=urdf_url,
+        urdf_path=urdf_path,
+        config=config,
+        active_arm=active_arm_name,
         refresh_interval_ms=refresh_interval_ms,
     )
 
