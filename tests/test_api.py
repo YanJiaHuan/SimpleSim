@@ -32,3 +32,40 @@ def test_move_ee_updates_state() -> None:
     assert out["success"]
     assert _dist3(out["ee_pose"], pose_target) < 1e-3
 
+
+def test_home_returns_to_q_init() -> None:
+    robot = make_planar_robot()
+    q_init = [0.1, -0.1]
+    state = make_initial_state(robot, q_init)
+    api = RobotAPI(robot=robot, state=state, q_init=q_init)
+
+    api.move_joint([0.5, 0.6])
+    out = api.home()
+
+    assert out["success"]
+    assert abs(out["q"][0] - 0.1) < 1e-9
+    assert abs(out["q"][1] + 0.1) < 1e-9
+
+
+def test_set_robot_swaps_model_and_q_init() -> None:
+    robot_a = make_planar_robot()
+    api = RobotAPI(
+        robot=robot_a,
+        state=make_initial_state(robot_a, [0.3, 0.4]),
+        q_init=[0.3, 0.4],
+    )
+    assert api.robot is robot_a
+
+    robot_b = make_planar_robot()
+    new_q_init = [0.0, 0.0]
+    api.set_robot(
+        robot=robot_b,
+        state=make_initial_state(robot_b, new_q_init),
+        q_init=new_q_init,
+    )
+
+    assert api.robot is robot_b
+    assert api.state.q == [0.0, 0.0]
+    out = api.home()
+    assert out["q"] == [0.0, 0.0]
+

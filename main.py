@@ -64,9 +64,16 @@ def main() -> None:
         expected_joint_names=[str(name) for name in arm_config.get("joint_names", [])],
     )
 
-    state = make_initial_state(robot, [float(v) for v in arm_config.get("q_init", [0.0] * robot.dof)])
+    q_init = [float(v) for v in arm_config.get("q_init", [0.0] * robot.dof)]
+    state = make_initial_state(robot, q_init)
     rm_bridge = RMArmBridge(config.get("rm_api", {}))
-    api = RobotAPI(robot=robot, state=state, ik_config=config.get("ik", {}), rm_bridge=rm_bridge)
+    api = RobotAPI(
+        robot=robot,
+        state=state,
+        ik_config=config.get("ik", {}),
+        rm_bridge=rm_bridge,
+        q_init=q_init,
+    )
 
     keyboard = KeyboardInterface(
         translation_step=float(config.get("keyboard", {}).get("translation_step", 0.01)),

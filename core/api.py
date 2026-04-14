@@ -73,12 +73,16 @@ class RobotAPI:
         state: SimulationState,
         ik_config: Dict[str, Any] | None = None,
         rm_bridge: RMArmBridge | None = None,
+        q_init: List[float] | None = None,
     ) -> None:
         self.robot = robot
         self.state = state
         self.ik_config = ik_config or {}
         self.rm_bridge = rm_bridge
         self._lock = threading.RLock()
+        self._q_init: List[float] = (
+            list(q_init) if q_init is not None else list(state.q)
+        )
 
     def _snapshot_locked(self) -> Dict[str, Any]:
         return {
@@ -159,4 +163,20 @@ class RobotAPI:
     def get_ee_pose(self) -> List[float]:
         with self._lock:
             return self.state.ee_pose[:]
+
+    def home(self) -> Dict[str, Any]:
+        with self._lock:
+            return self.move_joint(self._q_init[:])
+
+    def set_robot(
+        self,
+        robot: RobotModel,
+        state: SimulationState,
+        q_init: List[float],
+    ) -> Dict[str, Any]:
+        with self._lock:
+            self.robot = robot
+            self.state = state
+            self._q_init = list(q_init)
+            return self._snapshot_locked()
 
