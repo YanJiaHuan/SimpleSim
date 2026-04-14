@@ -2,6 +2,14 @@
 
 倒序(最新在上)。每条:日期 — 主题,具体改动列表,动机一行。手写,不自动生成。
 
+## 2026-04-14 — 键位重映射 + TR4 初始位姿
+
+- `interface/keyboard.py`:按坐标系(x+右,y+前,z+上)重映射:W/S 前后,A/D 左右,Q/E 上下,J/U roll,K/I pitch,L/O yaw;删除旧的 WASD+方向键混合方案。
+- `configs/tr4.yaml`:右臂 `q_init` 设为真实初始角度(22.431,−50.243,−65.806,−78.734,73.416,151.924°转弧度);左臂镜像(joint1 取反);`active_arm` 改为 `right`。
+- `web/index.html` + `styles.css`:keypad 分为 Translate / Rotate 两组 3×2 网格,新增 C(switch arm)宽键。
+- `web/app.js`:acceptedKeys 更新为新键位;`KeyC` 触发 `doSwitchArm()`。
+- 动机:实测原键位映射轴向混乱;TR4 初始位姿从全零改为实际工作姿态。
+
 ## 2026-04-14 — UX overhaul
 
 - `run.sh`:一键启动,自检子模块 / three / numpy;缺什么给提示命令,不自动安装。`$PYTHON` 变量统一 check 和 exec 的解释器。
