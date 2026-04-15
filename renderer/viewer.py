@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Dict
@@ -67,7 +68,7 @@ class RuntimeServer:
         arm_cfg = self.config.get("arms", {}).get(self.active_arm, {})
         q_init = [float(v) for v in arm_cfg.get("q_init", [0.0] * robot.dof)]
         return {
-            "urdf_url": self.urdf_url,
+            "urdf_url": f"{self.urdf_url}?v={int(time.time())}",
             "robot_name": robot.name,
             "base_link": robot.base_link,
             "ee_link": robot.ee_link,

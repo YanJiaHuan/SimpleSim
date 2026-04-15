@@ -38,7 +38,10 @@ class AccessoryController:
         self._elev_lower: float = float(elev.get("lower", 0.0))
         self._elev_upper: float = float(elev.get("upper", 0.35))
         self._elev_step: float = float(elev.get("step", 0.01))
-        self._elev_pos: float = self._elev_lower
+        self._elev_pos: float = max(
+            self._elev_lower,
+            min(self._elev_upper, float(elev.get("init", self._elev_lower))),
+        )
 
         gripper_cfg: Dict[str, Any] = config.get("grippers", {})
         # Per-arm: joint names, coupling coefficients, max_angle, step, current aperture
