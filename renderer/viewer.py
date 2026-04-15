@@ -115,6 +115,12 @@ class RuntimeServer:
             def log_message(self, format: str, *args) -> None:
                 return
 
+            def end_headers(self) -> None:
+                # Prevent browsers from caching static assets so code changes
+                # take effect immediately on refresh.
+                self.send_header("Cache-Control", "no-store")
+                super().end_headers()
+
             def do_GET(self):
                 path = urlparse(self.path).path
 
