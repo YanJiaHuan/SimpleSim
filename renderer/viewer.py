@@ -58,6 +58,7 @@ class RuntimeServer:
         self.config = config
         self.active_arm = active_arm
         self.refresh_interval_ms = refresh_interval_ms
+        self._urdf_version = int(time.time())
 
     def _meta_payload(self) -> Dict[str, Any]:
         robot = self.api.robot
@@ -68,7 +69,7 @@ class RuntimeServer:
         arm_cfg = self.config.get("arms", {}).get(self.active_arm, {})
         q_init = [float(v) for v in arm_cfg.get("q_init", [0.0] * robot.dof)]
         return {
-            "urdf_url": f"{self.urdf_url}?v={int(time.time())}",
+            "urdf_url": f"{self.urdf_url}?v={self._urdf_version}",
             "robot_name": robot.name,
             "base_link": robot.base_link,
             "ee_link": robot.ee_link,

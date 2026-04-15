@@ -2,155 +2,126 @@
 
 ## Goal
 
-Fix three runtime issues in SimpleSim's accessory controls for the TR4 Pro:
+Fix accessory control issues in SimpleSim for the TR4 Pro:
 1. Elevator joint has wrong URDF limits and does not move.
-2. Gripper linkage is visually "torn apart" due to incorrect coupling.
-3. Gripper key semantics are backwards; two keys should become one toggle.
+2. Gripper linkage is visually "torn apart" — joint3 should counter-rotate.
+3. Gripper key semantics: two keys → single G toggle.
+4. Arm switch camera jump (regression from cache-busting timestamp fix).
 
 ---
 
-## Issue 1 — Elevator Not Working
+## Issue 1 — Elevator Wrong Limits
 
 ### Root Cause
 
 `URDFLoader` clamps every `setJointValue` call to `[limit.lower, limit.upper]`.
-The `elevation` prismatic joint currently has incorrect limits (`lower=0 upper=0.35`
-from a prior fix attempt). The physically correct range is `lower=0 upper=0.8`,
-giving 0.8 m of travel along the URDF Z-axis (joint=0 = lowest, joint=0.8 = highest).
+The `elevation` prismatic joint must have `lower=-0.8 upper=0`, with axis `(0,0,1)`:
+- joint=0: torso at highest position (retracted)
+- joint=-0.8: torso at lowest position (extended down)
+
+init=-0.3 starts the robot 0.3 m below the top.
 
 Additionally, Python's `SimpleHTTPServer` sets no `Cache-Control` headers, so the
-browser may serve the stale URDF file even after the limits are corrected. We need
-cache-busting on the URDF URL.
+browser may serve a stale URDF. We need cache-busting on the URDF URL — computed
+**once at server startup** (see Issue 4).
 
 ### Fix
 
 **URDF** (`TR4_Pro/TR4_with_grippers_v2.urdf`):
 ```xml
-<limit effort="0" lower="0" upper="0.8" velocity="0"/>
+<limit effort="0" lower="-0.8" upper="0" velocity="0"/>
 ```
 
 **`configs/tr4.yaml`** — elevator section:
 ```json
 "elevator": {
   "joint_name": "elevation",
-  "lower": 0.0,
-  "upper": 0.8,
-  "init":  0.3,
-  "step":  0.005
+  "lower": -0.8,
+  "upper":  0.0,
+  "init":  -0.3,
+  "step":   0.005
 }
 ```
-`init` is the starting joint value. 0.3 = 0.3 m above the lowest position.
 
-**`core/accessories.py`** — read `init` from config:
-```python
-self._elev_pos = float(elev.get("init", elev.get("lower", 0.0)))
-```
-
-**`renderer/viewer.py`** — append `?v=<timestamp>` to the URDF URL so the browser
-never serves a cached file:
-```python
-import time
-urdf_url_versioned = f"{self.urdf_url}?v={int(time.time())}"
-# use urdf_url_versioned inside _meta_payload()
-```
-
-Key direction: `ArrowUp` → `step_elevator(+1)` (toward upper=0.8, physically rising),
-`ArrowDown` → `step_elevator(-1)` (toward lower=0, physically lowering).
+Key direction: `ArrowUp` → `step_elevator(+1)` toward upper=0 (physically rising),
+`ArrowDown` → `step_elevator(-1)` toward lower=-0.8 (physically lowering).
 
 ---
 
-## Issue 2 — Gripper Linkage Visual ("Torn Apart")
+## Issue 2 — Gripper Linkage ("Torn Apart")
 
 ### Root Cause
 
-Current approach: a single `coupling` vector multiplied by `aperture × max_angle`.
-With all three joints sharing the same URDF axis `(0,0,-1)` and coupling `±1.0`,
-every joint is driven to its individual limit simultaneously. The three-link finger
-does not fold naturally — it visually explodes.
+Previous fix drove all three joints proportionally in the same direction. The physical
+design (Robotiq-style underactuated finger) requires joint3 (the back linkage) to
+**counter-rotate** relative to joint1/joint2:
+- joint1 (palm knuckle): main driver, closes inward
+- joint2 (finger): follows joint1 (same direction)
+- joint3 (linkage/tendon): moves in the **opposite** direction — returns toward 0 from
+  a pre-loaded negative offset as the gripper closes
 
-The correct mock model (Robotiq-style) specifies two explicit postures — **open** and
-**closed** — and interpolates linearly. No physics required; each robot just supplies
-its own pair of joint-value arrays in the config.
+This matches the URDF joint limits: all l_joints are `[-1.0472, 0]` so joint3 can
+travel from -0.5 (open, pre-loaded) back to 0 (closed), which is valid and opposite
+to joint1's motion.
 
-### Design
+### Fix
 
-Replace `coupling`/`max_angle` with `open_positions` / `closed_positions` in YAML.
+**`configs/tr4.yaml`** — grippers section (same for both arms, same URDF):
+```json
+"grippers": {
+  "left": {
+    "joint_names": ["left_gripper_l_joint1", "left_gripper_l_joint2", "left_gripper_l_joint3",
+                    "left_gripper_r_joint1", "left_gripper_r_joint2", "left_gripper_r_joint3"],
+    "open_positions":   [0.0,  0.0, -0.5,  0.0,  0.0,  0.5],
+    "closed_positions": [-0.8, -0.6,  0.0,  0.8,  0.6,  0.0]
+  },
+  "right": { /* identical */ }
+}
+```
 
+Linear interpolation in `accessories.py`:
 ```
 joint_value[i] = open[i] + aperture × (closed[i] - open[i])
 ```
 
-`aperture` remains a scalar in `[0, 1]` (0 = open, 1 = closed).
+joint3 (index 2): open=-0.5 → closed=0 (positive travel = counter-rotation).
+joint3 (index 5, r_side): open=0.5 → closed=0 (negative travel = counter-rotation).
 
-**`configs/tr4.yaml`** — gripper section (example for right arm):
-```json
-"right": {
-  "joint_names": [
-    "right_gripper_l_joint1", "right_gripper_l_joint2", "right_gripper_l_joint3",
-    "right_gripper_r_joint1", "right_gripper_r_joint2", "right_gripper_r_joint3"
-  ],
-  "open_positions":   [0.0,  0.0,  0.0,   0.0,  0.0,  0.0],
-  "closed_positions": [-0.9, -0.7, -0.4,   0.9,  0.7,  0.4],
-  "step": 1.0
-}
-```
-
-Left arm: same pattern, limits sign matches URDF (`l_joint` upper=0, `r_joint` lower=0).
-
-> **Tuning note:** `closed_positions` are initial guesses based on progressive
-> finger curl. After testing, edit these six values in YAML to match the desired look.
-> No code changes required.
-
-`step` is now unused for continuous control (toggle jumps to 0 or 1 directly) but
-kept for API compatibility.
-
-**`core/accessories.py`** — `joint_values()` new formula:
-```python
-open_pos = g["open_positions"]
-clos_pos = g["closed_positions"]
-for i, jname in enumerate(g["joint_names"]):
-    vals[jname] = open_pos[i] + aperture * (clos_pos[i] - open_pos[i])
-```
+> **Tuning:** if closed shape looks wrong, edit `closed_positions` in YAML and restart.
 
 ---
 
-## Issue 3 — G/B Key Semantics & Toggle
+## Issue 3 — G/B Key Semantics & Toggle (already implemented)
 
-### Current behaviour (wrong)
-- G → close (+1), B → open (-1), both held-down continuous keys.
+- Single G keypress toggles aperture: 0→1 (open→closed) or 1→0 (closed→open).
+- B key removed.
+- Implemented in prior commit; no changes needed.
 
-### Desired behaviour
-- Single **G** keypress toggles between fully open (`aperture=0`) and fully closed
-  (`aperture=1`). Instant jump, no animation.
-- B key removed entirely.
+---
 
-### Design
+## Issue 4 — Arm Switch Camera Jump (regression)
 
-Add `toggle_gripper(arm_name)` to `AccessoryController`:
+### Root Cause
+
+`_meta_payload()` uses `f"{self.urdf_url}?v={int(time.time())}"`, generating a **new
+timestamp on every call**. `doSwitchArm` in `app.js` compares `prevUrdfUrl` to
+`meta.urdf_url` and calls `reloadRobot()` when they differ — which is always true now
+because the timestamp changed between the two `/api/meta` or `/api/switch_arm` calls.
+
+### Fix
+
+Compute the version stamp **once** in `RuntimeServer.__init__`:
 ```python
-def toggle_gripper(self, arm_name: str) -> None:
-    with self._lock:
-        g = self._grippers.get(arm_name)
-        if g is None:
-            return
-        g["aperture"] = 0.0 if g["aperture"] > 0.5 else 1.0
+import time
+self._urdf_version = int(time.time())
 ```
 
-In `renderer/viewer.py` keyboard handler, replace G/B continuous logic:
+In `_meta_payload`:
 ```python
-if "KeyG" in keys:
-    server_ref.accessory.toggle_gripper(server_ref.active_arm)
-# remove KeyB handling
+"urdf_url": f"{self.urdf_url}?v={self._urdf_version}",
 ```
 
-In `web/app.js`, move `KeyG` from `acceptedKeys` (continuous) to a one-shot handler
-like `KeyR`/`KeyC` — fires once per keydown, does not accumulate in `activeKeys`.
-
-In `web/index.html`, replace the two-button keypad group with a single wide key:
-```html
-<div class="key key-wide" data-code="KeyG">G &nbsp; toggle grip</div>
-```
-Remove the `KeyB` key element.
+This keeps the URL stable across arm switches while still cache-busting on server restart.
 
 ---
 
@@ -158,17 +129,16 @@ Remove the `KeyB` key element.
 
 | File | Change |
 |------|--------|
-| `TR4_Pro/TR4_with_grippers_v2.urdf` | Fix elevation limits |
-| `configs/tr4.yaml` | elevator lower/upper/init; grippers open/closed positions |
-| `core/accessories.py` | init from config; interpolation formula; toggle_gripper() |
-| `renderer/viewer.py` | cache-bust URDF URL; toggle G, remove B |
-| `web/app.js` | G as one-shot key; remove B from acceptedKeys |
-| `web/index.html` | Single "toggle grip" key, remove B key |
+| `TR4_Pro/TR4_with_grippers_v2.urdf` | elevation limits: lower=-0.8 upper=0 |
+| `configs/tr4.yaml` | elevator lower/upper/init; grippers open/closed with joint3 counter-rotate |
+| `renderer/viewer.py` | timestamp computed once in `__init__`, not per call |
+
+`core/accessories.py` and frontend files require no changes (already correct).
 
 ---
 
 ## Out of Scope
 
-- Smooth animation / tween for gripper (user confirmed instant jump is fine)
+- Smooth animation/tween for gripper
 - Per-robot code paths (all config-driven)
-- Physics simulation of contact compliance
+- Contact compliance simulation
