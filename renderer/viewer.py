@@ -92,6 +92,7 @@ class RuntimeServer:
 
     def _with_all_joints(self, state: Dict[str, Any]) -> Dict[str, Any]:
         state["all_joints"] = self._all_joints()
+        state["accessory"] = self.accessory.snapshot()
         return state
 
     def _switch_arm(self, arm_name: str) -> Dict[str, Any]:
