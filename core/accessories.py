@@ -47,11 +47,12 @@ class AccessoryController:
         # Per-arm: joint names, coupling coefficients, max_angle, step, current aperture
         self._grippers: Dict[str, Dict[str, Any]] = {}
         for arm_name, gcfg in gripper_cfg.items():
+            joint_names = [str(n) for n in gcfg.get("joint_names", [])]
+            n = len(joint_names)
             self._grippers[arm_name] = {
-                "joint_names": [str(n) for n in gcfg.get("joint_names", [])],
-                "coupling": [float(c) for c in gcfg.get("coupling", [])],
-                "max_angle": float(gcfg.get("max_angle", 1.0472)),
-                "step": float(gcfg.get("step", 0.05)),
+                "joint_names": joint_names,
+                "open_positions":   [float(v) for v in gcfg.get("open_positions",   [0.0] * n)],
+                "closed_positions": [float(v) for v in gcfg.get("closed_positions", [0.0] * n)],
                 "aperture": 0.0,
             }
 
@@ -83,10 +84,10 @@ class AccessoryController:
             vals: Dict[str, float] = {self._elev_joint: self._elev_pos}
             for g in self._grippers.values():
                 aperture = g["aperture"]
-                max_angle = g["max_angle"]
+                open_pos = g["open_positions"]
+                clos_pos = g["closed_positions"]
                 for i, jname in enumerate(g["joint_names"]):
-                    coupling = g["coupling"][i] if i < len(g["coupling"]) else 1.0
-                    vals[jname] = coupling * aperture * max_angle
+                    vals[jname] = open_pos[i] + aperture * (clos_pos[i] - open_pos[i])
             return vals
 
     # ── Snapshot (for API responses) ──────────────────────────────────────────
