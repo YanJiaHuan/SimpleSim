@@ -570,7 +570,7 @@
     <parent link="left_gripper_l_link1"/>
     <child  link="left_gripper_l_link2"/>
     <axis xyz="0 0 -1"/>
-    <limit lower="-1.0472" upper="0" effort="0" velocity="0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="0" velocity="0"/>
   </joint>
 
 
@@ -658,7 +658,7 @@
     <parent link="left_gripper_r_link1"/>
     <child  link="left_gripper_r_link2"/>
     <axis xyz="0 0 -1"/>
-    <limit lower="0" upper="1.0472" effort="0" velocity="0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="0" velocity="0"/>
   </joint>
 
 
@@ -769,7 +769,7 @@
     <parent link="right_gripper_l_link1"/>
     <child  link="right_gripper_l_link2"/>
     <axis xyz="0 0 -1"/>
-    <limit lower="-1.0472" upper="0" effort="0" velocity="0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="0" velocity="0"/>
   </joint>
 
   <link name="right_gripper_l_link3">
@@ -856,7 +856,7 @@
     <parent link="right_gripper_r_link1"/>
     <child  link="right_gripper_r_link2"/>
     <axis xyz="0 0 -1"/>
-    <limit lower="0" upper="1.0472" effort="0" velocity="0"/>
+    <limit lower="-1.0472" upper="1.0472" effort="0" velocity="0"/>
   </joint>
 
   <link name="right_gripper_r_link3">
