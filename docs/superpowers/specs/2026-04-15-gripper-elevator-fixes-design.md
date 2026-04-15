@@ -15,8 +15,8 @@ Fix three runtime issues in SimpleSim's accessory controls for the TR4 Pro:
 
 `URDFLoader` clamps every `setJointValue` call to `[limit.lower, limit.upper]`.
 The `elevation` prismatic joint currently has incorrect limits (`lower=0 upper=0.35`
-from a prior fix attempt). The physically correct range is `lower=-0.8 upper=0.3`,
-giving 1.1 m of travel along the URDF Z-axis.
+from a prior fix attempt). The physically correct range is `lower=0 upper=0.8`,
+giving 0.8 m of travel along the URDF Z-axis (joint=0 = lowest, joint=0.8 = highest).
 
 Additionally, Python's `SimpleHTTPServer` sets no `Cache-Control` headers, so the
 browser may serve the stale URDF file even after the limits are corrected. We need
@@ -26,24 +26,24 @@ cache-busting on the URDF URL.
 
 **URDF** (`TR4_Pro/TR4_with_grippers_v2.urdf`):
 ```xml
-<limit effort="0" lower="-0.8" upper="0.3" velocity="0"/>
+<limit effort="0" lower="0" upper="0.8" velocity="0"/>
 ```
 
 **`configs/tr4.yaml`** — elevator section:
 ```json
 "elevator": {
   "joint_name": "elevation",
-  "lower": -0.8,
-  "upper":  0.3,
-  "init":   0.3,
-  "step":   0.005
+  "lower": 0.0,
+  "upper": 0.8,
+  "init":  0.3,
+  "step":  0.005
 }
 ```
-`init` is the starting joint value (robot begins at full height).
+`init` is the starting joint value. 0.3 = 0.3 m above the lowest position.
 
 **`core/accessories.py`** — read `init` from config:
 ```python
-self._elev_pos = float(elev.get("init", elev.get("upper", 0.0)))
+self._elev_pos = float(elev.get("init", elev.get("lower", 0.0)))
 ```
 
 **`renderer/viewer.py`** — append `?v=<timestamp>` to the URDF URL so the browser
@@ -54,8 +54,8 @@ urdf_url_versioned = f"{self.urdf_url}?v={int(time.time())}"
 # use urdf_url_versioned inside _meta_payload()
 ```
 
-Key direction stays: `ArrowUp` → `step_elevator(+1)` (toward upper=0.3), `ArrowDown`
-→ `step_elevator(-1)` (toward lower=-0.8).
+Key direction: `ArrowUp` → `step_elevator(+1)` (toward upper=0.8, physically rising),
+`ArrowDown` → `step_elevator(-1)` (toward lower=0, physically lowering).
 
 ---
 
