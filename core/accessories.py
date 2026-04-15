@@ -68,13 +68,13 @@ class AccessoryController:
 
     # ── Gripper ───────────────────────────────────────────────────────────────
 
-    def step_gripper(self, arm_name: str, direction: int) -> None:
-        """direction: +1 = close, -1 = open."""
+    def toggle_gripper(self, arm_name: str) -> None:
+        """Toggle gripper between fully open (aperture=0) and fully closed (aperture=1)."""
         with self._lock:
             g = self._grippers.get(arm_name)
             if g is None:
                 return
-            g["aperture"] = max(0.0, min(1.0, g["aperture"] + direction * g["step"]))
+            g["aperture"] = 0.0 if g["aperture"] > 0.5 else 1.0
 
     # ── Joint values (for renderer / Three.js) ────────────────────────────────
 

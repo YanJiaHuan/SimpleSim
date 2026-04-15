@@ -144,11 +144,9 @@ class RuntimeServer:
                             server_ref.accessory.step_elevator(+1)
                         if "ArrowDown" in keys:
                             server_ref.accessory.step_elevator(-1)
-                        # Gripper (G=close, B=open, both for active arm)
+                        # Gripper toggle (G = open↔close)
                         if "KeyG" in keys:
-                            server_ref.accessory.step_gripper(server_ref.active_arm, +1)
-                        if "KeyB" in keys:
-                            server_ref.accessory.step_gripper(server_ref.active_arm, -1)
+                            server_ref.accessory.toggle_gripper(server_ref.active_arm)
                         return _send_json(
                             self,
                             server_ref._with_all_joints(

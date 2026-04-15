@@ -46,10 +46,11 @@ const activeKeys = new Set();
 const acceptedKeys = new Set([
   'KeyW', 'KeyS', 'KeyA', 'KeyD', 'KeyQ', 'KeyE',
   'KeyJ', 'KeyU', 'KeyK', 'KeyI', 'KeyL', 'KeyO',
-  'ArrowUp', 'ArrowDown', 'KeyG', 'KeyB',
+  'ArrowUp', 'ArrowDown',
 ]);
 const switchArmKey = 'KeyC';
 const resetKey = 'KeyR';
+const gripperKey = 'KeyG';
 
 let meta = null;
 let robot = null;
@@ -324,6 +325,20 @@ function setupKeyboard() {
       const el = keyEls.get(switchArmKey);
       el?.classList.add('active');
       doSwitchArm().then(() => el?.classList.remove('active'));
+      return;
+    }
+    if (event.code === gripperKey) {
+      event.preventDefault();
+      const el = keyEls.get(gripperKey);
+      el?.classList.add('active');
+      fetch('/api/keyboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys: ['KeyG'] }),
+      })
+        .then(r => r.json())
+        .then(state => { applyState(state); })
+        .finally(() => el?.classList.remove('active'));
       return;
     }
     if (!acceptedKeys.has(event.code)) return;
