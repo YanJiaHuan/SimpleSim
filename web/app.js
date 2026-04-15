@@ -24,8 +24,9 @@ const armBadgeEl = document.getElementById('arm-badge');
 const jointsBodyEl = document.getElementById('joints-body');
 const ikDotEl = document.getElementById('ik-dot');
 const ikSummaryEl = document.getElementById('ik-summary');
-const homeBtn = document.getElementById('btn-home');
-const armBtn = document.getElementById('btn-arm');
+const accElevationEl = document.getElementById('acc-elevation');
+const accGripLEl     = document.getElementById('acc-grip-l');
+const accGripREl     = document.getElementById('acc-grip-r');
 
 const poseEls = {
   x: document.getElementById('pose-x'),
@@ -114,6 +115,13 @@ function applyJoints(jointNames, q) {
   }
 }
 
+function applyAccessory(accessory) {
+  if (!accessory) return;
+  accElevationEl.textContent = fmt(accessory.elevator, 3) + ' m';
+  accGripLEl.textContent  = (accessory.grippers?.left  ?? 0) >= 0.5 ? 'closed' : 'open';
+  accGripREl.textContent  = (accessory.grippers?.right ?? 0) >= 0.5 ? 'closed' : 'open';
+}
+
 function applyIk(ik, success) {
   if (ik) {
     ikDotEl.classList.remove('good', 'bad');
@@ -133,6 +141,7 @@ function applyState(state) {
   if (state.ee_pose) applyPose(state.ee_pose);
   if (state.joint_names && state.q) applyJoints(state.joint_names, state.q);
   if (state.ik || state.success === false) applyIk(state.ik, state.success);
+  if (state.accessory) applyAccessory(state.accessory);
 
   if (robot) {
     if (state.all_joints) {
@@ -359,8 +368,6 @@ function setupKeyboard() {
     keyEls.forEach(el => el.classList.remove('active'));
   });
 
-  homeBtn.addEventListener('click', doHome);
-  armBtn.addEventListener('click', doSwitchArm);
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────────────
