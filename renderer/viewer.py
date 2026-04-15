@@ -131,8 +131,19 @@ class RuntimeServer:
                     return _send_json(self, server_ref._meta_payload())
 
                 if path == "/":
-                    self.path = "/web/index.html"
-                    return super().do_GET()
+                    # Inject version stamp into asset URLs so every server
+                    # restart forces the browser to fetch fresh JS/CSS.
+                    v = server_ref._urdf_version
+                    html = (server_ref.static_root / "web" / "index.html").read_text("utf-8")
+                    html = html.replace('src="/web/app.js"',     f'src="/web/app.js?v={v}"')
+                    html = html.replace('href="/web/styles.css"', f'href="/web/styles.css?v={v}"')
+                    blob = html.encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "text/html; charset=utf-8")
+                    self.send_header("Content-Length", str(len(blob)))
+                    self.end_headers()
+                    self.wfile.write(blob)
+                    return
 
                 return super().do_GET()
 
