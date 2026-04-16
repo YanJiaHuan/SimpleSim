@@ -2,6 +2,10 @@
 
 A minimal browser-based robot runtime. Load a URDF, render it in 3D, drive the end-effector with keyboard-controlled IK, and optionally bridge to real hardware — no ROS, no physics engine, no overhead.
 
+<p align="center">
+  <img src="media/demo.gif" alt="SimpleSim demo" width="820">
+</p>
+
 ## Quick Start
 
 ```bash
