@@ -71,6 +71,7 @@ class RuntimeServer:
         return {
             "urdf_url": f"{self.urdf_url}?v={self._urdf_version}",
             "robot_name": robot.name,
+            "robot_label": str(self.config.get("robot_label", robot.name)),
             "base_link": robot.base_link,
             "ee_link": robot.ee_link,
             "joint_names": robot.joint_names,
@@ -79,6 +80,18 @@ class RuntimeServer:
             "active_arm": self.active_arm,
             "available_arms": sorted(self.config.get("arms", {}).keys()),
             "refresh_interval_ms": self.refresh_interval_ms,
+            "controls": {
+                "can_switch_arm": len(self.arms_data) > 1,
+                "show_linear_axis_controls": any(
+                    item["kind"] == "linear_axis"
+                    for item in self.accessory.describe()
+                ),
+                "gripper_key": "KeyG",
+            },
+            "panels": {
+                "show_arm_badge": len(self.arms_data) > 1,
+                "accessories": self.accessory.describe(),
+            },
         }
 
     def _all_joints(self) -> Dict[str, float]:
@@ -158,19 +171,10 @@ class RuntimeServer:
                 try:
                     if path == "/api/keyboard":
                         keys = payload.get("keys", [])
-                        # Elevator
-                        if "ArrowUp" in keys:
-                            server_ref.accessory.step_elevator(+1)
-                        if "ArrowDown" in keys:
-                            server_ref.accessory.step_elevator(-1)
-                        # Gripper toggle (G = open↔close)
-                        if "KeyG" in keys:
-                            server_ref.accessory.toggle_gripper(server_ref.active_arm)
+                        server_ref.accessory.apply_keys(keys, active_arm=server_ref.active_arm)
                         return _send_json(
                             self,
-                            server_ref._with_all_joints(
-                                server_ref.keyboard.apply_keys(keys, server_ref.api)
-                            ),
+                            server_ref._with_all_joints(server_ref.keyboard.apply_keys(keys, server_ref.api)),
                         )
 
                     if path == "/api/move_joint":

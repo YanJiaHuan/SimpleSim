@@ -14,6 +14,7 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import URDFLoader from '/third_party/urdf-loaders/javascript/src/URDFLoader.js';
+import { buildAccessoryRows, buildKeypadFlags } from '/web/panel-model.js';
 
 // DOM refs
 const viewer = document.getElementById('viewer');
@@ -24,9 +25,9 @@ const armBadgeEl = document.getElementById('arm-badge');
 const jointsBodyEl = document.getElementById('joints-body');
 const ikDotEl = document.getElementById('ik-dot');
 const ikSummaryEl = document.getElementById('ik-summary');
-const accElevationEl = document.getElementById('acc-elevation');
-const accGripLEl     = document.getElementById('acc-grip-l');
-const accGripREl     = document.getElementById('acc-grip-r');
+const accessoryListEl = document.getElementById('accessory-list');
+const linearAxisKeypadEl = document.getElementById('keypad-linear-axis');
+const switchArmKeypadEl = document.getElementById('keypad-switch-arm');
 
 const poseEls = {
   x: document.getElementById('pose-x'),
@@ -116,10 +117,11 @@ function applyJoints(jointNames, q) {
 }
 
 function applyAccessory(accessory) {
-  if (!accessory) return;
-  accElevationEl.textContent = fmt(accessory.elevator, 3) + ' m';
-  accGripLEl.textContent  = (accessory.grippers?.left  ?? 0) >= 0.5 ? 'closed' : 'open';
-  accGripREl.textContent  = (accessory.grippers?.right ?? 0) >= 0.5 ? 'closed' : 'open';
+  const rows = buildAccessoryRows(meta, { accessory });
+  accessoryListEl.innerHTML = rows.map(row => `
+    <dt>${row.term}</dt><dd>${row.value}</dd>
+  `).join('');
+  document.getElementById('card-accessories').hidden = rows.length === 0;
 }
 
 function applyIk(ik, success) {
@@ -158,9 +160,13 @@ function applyState(state) {
 }
 
 function applyMeta(nextMeta) {
-  robotNameEl.textContent = nextMeta.robot_name;
+  robotNameEl.textContent = nextMeta.robot_label || nextMeta.robot_name;
   robotChainEl.textContent = `${nextMeta.base_link} → ${nextMeta.ee_link}`;
   armBadgeEl.textContent = nextMeta.active_arm;
+  armBadgeEl.hidden = nextMeta.panels?.show_arm_badge !== true;
+  const flags = buildKeypadFlags(nextMeta);
+  linearAxisKeypadEl.hidden = !flags.showLinearAxis;
+  switchArmKeypadEl.hidden = !flags.showSwitchArm;
   // Clear joint rows so they rebuild on next applyState call.
   jointsBodyEl.innerHTML = '';
 }
@@ -212,7 +218,7 @@ async function doHome() {
 }
 
 async function doSwitchArm() {
-  if (!meta) return;
+  if (!meta?.controls?.can_switch_arm) return;
   const arms = meta.available_arms || [];
   if (arms.length < 2) return;
   const next = arms.find(a => a !== meta.active_arm) || arms[0];

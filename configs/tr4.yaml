@@ -1,4 +1,5 @@
 {
+  "robot_label": "TR4 Pro",
   "active_arm": "right",
   "arms": {
     "left": {
@@ -38,31 +39,42 @@
     "alpha": 1.0,
     "orientation_weight": 0.5
   },
-  "elevator": {
-    "joint_name": "elevation",
-    "lower": -0.8,
-    "upper":  0.0,
-    "init":  -0.3,
-    "step":   0.005
-  },
-  "grippers": {
-    "left": {
+  "accessories": [
+    {
+      "id": "column",
+      "kind": "linear_axis",
+      "label": "Elevation",
+      "joint_name": "elevation",
+      "lower": -0.8,
+      "upper": 0.0,
+      "init": -0.3,
+      "step": 0.005
+    },
+    {
+      "id": "left_gripper",
+      "kind": "gripper",
+      "label": "Left Grip",
+      "arm": "left",
       "joint_names": [
         "left_gripper_l_joint1", "left_gripper_l_joint2", "left_gripper_l_joint3",
         "left_gripper_r_joint1", "left_gripper_r_joint2", "left_gripper_r_joint3"
       ],
-      "open_positions":   [-0.71,  0.70, -0.71,  0.71, -0.70,  0.71],
-      "closed_positions": [-0.05,  0.00, -0.05,  0.05,  0.00,  0.05]
+      "open_positions": [-0.71, 0.70, -0.71, 0.71, -0.70, 0.71],
+      "closed_positions": [-0.05, 0.00, -0.05, 0.05, 0.00, 0.05]
     },
-    "right": {
+    {
+      "id": "right_gripper",
+      "kind": "gripper",
+      "label": "Right Grip",
+      "arm": "right",
       "joint_names": [
         "right_gripper_l_joint1", "right_gripper_l_joint2", "right_gripper_l_joint3",
         "right_gripper_r_joint1", "right_gripper_r_joint2", "right_gripper_r_joint3"
       ],
-      "open_positions":   [-0.71,  0.70, -0.71,  0.71, -0.70,  0.71],
-      "closed_positions": [-0.05,  0.00, -0.05,  0.05,  0.00,  0.05]
+      "open_positions": [-0.71, 0.70, -0.71, 0.71, -0.70, 0.71],
+      "closed_positions": [-0.05, 0.00, -0.05, 0.05, 0.00, 0.05]
     }
-  },
+  ],
   "keyboard": {
     "translation_step": 0.01,
     "rotation_step": 0.04
@@ -71,17 +83,5 @@
     "host": "127.0.0.1",
     "port": 8765,
     "refresh_interval_ms": 40
-  },
-  "rm_api": {
-    "enabled": false,
-    "python_api_root": "third_party/RM_API2/Python",
-    "ip": "192.168.1.18",
-    "port": 8080,
-    "thread_mode": "RM_DUAL_MODE_E",
-    "log_level": 3,
-    "speed_percent": 20,
-    "blend_percent": 0,
-    "connect": 0,
-    "block": 0
   }
 }
