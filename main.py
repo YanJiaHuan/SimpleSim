@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from core.accessories import AccessoryController
-from core.api import RMArmBridge, RobotAPI
+from core.api import RobotAPI
 from core.state import make_initial_state
 from interface.keyboard import KeyboardInterface
 from loader.urdf import load_robot_model
@@ -32,8 +32,8 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="SimpleSim robot runtime")
     parser.add_argument(
         "--urdf",
-        default="TR4_Pro/TR4_with_grippers_v2.urdf",
-        help="Path to URDF file (default: TR4 Pro with grippers)",
+        default="third_party/TR4_Pro/TR4_with_grippers_v2.urdf",
+        help="Path to URDF file (default: third_party/TR4_Pro/TR4_with_grippers_v2.urdf)",
     )
     parser.add_argument(
         "--config",
@@ -74,12 +74,10 @@ def main() -> None:
         raise ValueError(f"No arm config named '{active_arm_name}'")
 
     robot, state, q_init = arms_data[active_arm_name]
-    rm_bridge = RMArmBridge(config.get("rm_api", {}))
     api = RobotAPI(
         robot=robot,
         state=state,
         ik_config=config.get("ik", {}),
-        rm_bridge=rm_bridge,
         q_init=q_init,
     )
 
@@ -117,10 +115,6 @@ def main() -> None:
     print("Controls:")
     print("  Translate  : W/S (x)   A/D (y)   R/F (z)")
     print("  Rotate     : Q/E (yaw)   Up/Down (pitch)   Left/Right (roll)")
-    if rm_bridge.error:
-        print(f"RM_API2 disabled: {rm_bridge.error}")
-    elif rm_bridge.enabled:
-        print("RM_API2: connected")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

@@ -5,98 +5,104 @@ from typing import Any, Dict, List
 
 
 class AccessoryController:
-    """Manages elevator and gripper joints outside the IK arm chain.
-
-    Elevator
-    --------
-    Single prismatic joint.  ArrowUp/Down step the position within [lower, upper].
-
-    Gripper
-    -------
-    Each arm has two 3-link fingers (l_joint1-3 and r_joint1-3).  A single
-    ``aperture`` parameter in [0=open, 1=closed] drives all six joints via
-    per-joint coupling coefficients.
-
-    The coupling list must have one entry per joint_name.  Positive coupling
-    closes the finger, negative opens it.  Magnitude scales the max_angle, so
-    coupling=1.0 means the joint travels its full max_angle when aperture=1.
-
-    Example (symmetric parallel gripper):
-        joint_names = [l_j1, l_j2, l_j3, r_j1, r_j2, r_j3]
-        coupling    = [-1.0, -1.0, -1.0,  1.0,  1.0,  1.0]
-
-    The left-finger joints rotate in the negative direction to close; the
-    right-finger joints in the positive direction.  Because all joints share
-    the same axis (0 0 -1) in the URDF, this produces symmetric closure.
-    """
+    """Manages robot accessories (linear axis, grippers) outside IK chains."""
 
     def __init__(self, config: Dict[str, Any]) -> None:
         self._lock = threading.RLock()
 
-        elev = config.get("elevator", {})
-        self._elev_joint: str = str(elev.get("joint_name", "elevation"))
-        self._elev_lower: float = float(elev.get("lower", 0.0))
-        self._elev_upper: float = float(elev.get("upper", 0.35))
-        self._elev_step: float = float(elev.get("step", 0.01))
-        self._elev_pos: float = max(
-            self._elev_lower,
-            min(self._elev_upper, float(elev.get("init", self._elev_lower))),
-        )
-
-        gripper_cfg: Dict[str, Any] = config.get("grippers", {})
-        # Per-arm: joint names, coupling coefficients, max_angle, step, current aperture
-        self._grippers: Dict[str, Dict[str, Any]] = {}
-        for arm_name, gcfg in gripper_cfg.items():
-            joint_names = [str(n) for n in gcfg.get("joint_names", [])]
-            n = len(joint_names)
-            self._grippers[arm_name] = {
-                "joint_names": joint_names,
-                "open_positions":   [float(v) for v in gcfg.get("open_positions",   [0.0] * n)],
-                "closed_positions": [float(v) for v in gcfg.get("closed_positions", [0.0] * n)],
-                "aperture": 0.0,
+        self._accessories: Dict[str, Dict[str, Any]] = {}
+        for item in config.get("accessories", []):
+            accessory_id = str(item["id"])
+            kind = str(item["kind"])
+            base: Dict[str, Any] = {
+                "kind": kind,
+                "label": str(item.get("label", accessory_id)),
+                "arm": item.get("arm"),
             }
+            if kind == "linear_axis":
+                lower = float(item.get("lower", 0.0))
+                upper = float(item.get("upper", 0.0))
+                init = float(item.get("init", lower))
+                base.update(
+                    {
+                        "joint_name": str(item["joint_name"]),
+                        "lower": lower,
+                        "upper": upper,
+                        "step": float(item.get("step", 0.01)),
+                        "value": max(lower, min(upper, init)),
+                    }
+                )
+            elif kind == "gripper":
+                joint_names = [str(n) for n in item.get("joint_names", [])]
+                n = len(joint_names)
+                base.update(
+                    {
+                        "joint_names": joint_names,
+                        "open_positions": [float(v) for v in item.get("open_positions", [0.0] * n)],
+                        "closed_positions": [float(v) for v in item.get("closed_positions", [0.0] * n)],
+                        "aperture": 0.0,
+                    }
+                )
+            else:
+                continue
+            self._accessories[accessory_id] = base
 
-    # ── Elevator ──────────────────────────────────────────────────────────────
-
-    def step_elevator(self, direction: int) -> None:
-        """direction: +1 = up, -1 = down."""
+    def apply_keys(self, keys: List[str], active_arm: str) -> None:
         with self._lock:
-            self._elev_pos = max(
-                self._elev_lower,
-                min(self._elev_upper, self._elev_pos + direction * self._elev_step),
-            )
-
-    # ── Gripper ───────────────────────────────────────────────────────────────
-
-    def toggle_gripper(self, arm_name: str) -> None:
-        """Toggle gripper between fully open (aperture=0) and fully closed (aperture=1)."""
-        with self._lock:
-            g = self._grippers.get(arm_name)
-            if g is None:
-                return
-            g["aperture"] = 0.0 if g["aperture"] > 0.5 else 1.0
-
-    # ── Joint values (for renderer / Three.js) ────────────────────────────────
+            for item in self._accessories.values():
+                if item["kind"] == "linear_axis":
+                    if "ArrowUp" in keys:
+                        item["value"] = min(item["upper"], item["value"] + item["step"])
+                    if "ArrowDown" in keys:
+                        item["value"] = max(item["lower"], item["value"] - item["step"])
+                elif item["kind"] == "gripper" and item.get("arm") == active_arm:
+                    if "KeyG" in keys:
+                        item["aperture"] = 0.0 if item["aperture"] > 0.5 else 1.0
 
     def joint_values(self) -> Dict[str, float]:
-        """Return {joint_name: value} for every accessory joint."""
         with self._lock:
-            vals: Dict[str, float] = {self._elev_joint: self._elev_pos}
-            for g in self._grippers.values():
-                aperture = g["aperture"]
-                open_pos = g["open_positions"]
-                clos_pos = g["closed_positions"]
-                for i, jname in enumerate(g["joint_names"]):
-                    vals[jname] = open_pos[i] + aperture * (clos_pos[i] - open_pos[i])
-            return vals
-
-    # ── Snapshot (for API responses) ──────────────────────────────────────────
+            values: Dict[str, float] = {}
+            for item in self._accessories.values():
+                if item["kind"] == "linear_axis":
+                    values[str(item["joint_name"])] = float(item["value"])
+                elif item["kind"] == "gripper":
+                    aperture = float(item["aperture"])
+                    for idx, joint_name in enumerate(item["joint_names"]):
+                        open_pos = float(item["open_positions"][idx])
+                        closed_pos = float(item["closed_positions"][idx])
+                        values[joint_name] = open_pos + aperture * (closed_pos - open_pos)
+            return values
 
     def snapshot(self) -> Dict[str, Any]:
         with self._lock:
-            return {
-                "elevator": self._elev_pos,
-                "grippers": {
-                    arm: g["aperture"] for arm, g in self._grippers.items()
-                },
-            }
+            snapshot: Dict[str, Any] = {}
+            for accessory_id, item in self._accessories.items():
+                if item["kind"] == "linear_axis":
+                    snapshot[accessory_id] = {
+                        "kind": "linear_axis",
+                        "label": item["label"],
+                        "value": float(item["value"]),
+                        "unit": "m",
+                    }
+                elif item["kind"] == "gripper":
+                    aperture = float(item["aperture"])
+                    snapshot[accessory_id] = {
+                        "kind": "gripper",
+                        "label": item["label"],
+                        "arm": item.get("arm"),
+                        "aperture": aperture,
+                        "is_closed": aperture >= 0.5,
+                    }
+            return snapshot
+
+    def describe(self) -> List[Dict[str, Any]]:
+        with self._lock:
+            return [
+                {
+                    "id": accessory_id,
+                    "kind": item["kind"],
+                    "label": item["label"],
+                    "arm": item.get("arm"),
+                }
+                for accessory_id, item in self._accessories.items()
+            ]
